@@ -217,6 +217,43 @@ def cmd_market(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_build(args: argparse.Namespace) -> int:
+    """팩 디렉토리 → `.apm` 아티팩트. **apm.yml 이 단일 정본이다.**
+
+    agent-hub 의 `build_pack_apm` 은 매니페스트를 **코드**(`AGENT_PACKS`)에서 만든다.
+    그래서 오늘은 두 빌드의 hash 가 다르다 — 그 차이가 곧 이중 선언 부채(S1)이며,
+    `manifest_overrides` 를 폐기하고 apm.yml 파생으로 수렴시키면 사라진다.
+    이 명령은 **수렴 후의 정답 형태**를 미리 구현해 둔 것이다.
+    """
+    from apm_codec import build_apm_bundle
+
+    out_dir = Path(args.out or (REPO_ROOT / "dist"))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    rc = 0
+    for pack in _pack_dirs(args.pack):
+        manifest = _load_yaml(pack / "apm.yml")
+        if not manifest:
+            print(f"✗  {pack.name}: apm.yml missing/empty")
+            rc = 1
+            continue
+        manifest = dict(manifest)
+        manifest.setdefault("agent_id", pack.name.removesuffix(".agent"))
+
+        files: dict[str, bytes] = {}
+        for path in sorted(pack.rglob("*")):
+            if path.is_file() and "__pycache__" not in path.parts:
+                files[str(path.relative_to(pack))] = path.read_bytes()
+
+        blob, chash = build_apm_bundle(manifest, files)
+        target = out_dir / f"{manifest['agent_id']}-{manifest.get('version', '0.0.0')}.apm"
+        target.write_bytes(blob)
+        print(
+            f"✓  {pack.name}: {len(files)} files, {len(blob)} bytes, "
+            f"hash {chash[:16]}… → {target.relative_to(REPO_ROOT)}"
+        )
+    return rc
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="apm-kit", description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -229,6 +266,11 @@ def main() -> int:
     p_lint = sub.add_parser("lint", help="vocabulary / required fields / identity scan")
     p_lint.add_argument("pack", nargs="?")
     p_lint.set_defaults(func=cmd_lint)
+
+    p_build = sub.add_parser("build", help="pack dir -> .apm artifact (apm.yml = 정본)")
+    p_build.add_argument("pack", nargs="?")
+    p_build.add_argument("--out", help="output dir (default: dist/)")
+    p_build.set_defaults(func=cmd_build)
 
     p_market = sub.add_parser("market", help="generate .claude-plugin/marketplace.json")
     p_market.set_defaults(func=cmd_market)
