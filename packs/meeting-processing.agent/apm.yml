@@ -1,5 +1,5 @@
 name: schift-meeting-processing-agent
-version: 0.1.2
+version: 0.1.3
 description: Schift meeting processing APM that selects meeting-note AWPs and coordinates user approval.
 extends: ../runtime.yml
 

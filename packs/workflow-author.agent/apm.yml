@@ -1,5 +1,5 @@
 name: schift-workflow-author-agent
-version: 0.1.2
+version: 0.1.3
 description: >-
   워크플로우 저작 APM. 콘솔 "말로 만들기/다듬기"의 그래프 저작 정책(프롬프트
   규칙·revision 계약)의 단일 정본. 블록 카탈로그는 호스트(schift-api manifest
