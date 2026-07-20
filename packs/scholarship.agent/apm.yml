@@ -1,4 +1,5 @@
 name: schift-scholarship-agent
+display_name: "Schift Scholarship Search Agent"
 version: 0.1.2
 description: Schift scholarship search & periodic digest agent package (베타). Finds Korean scholarships from official sources and builds a cron-deliverable digest filtered by student profile.
 extends: ../runtime.yml
@@ -36,3 +37,114 @@ knowledge:
   # MVP는 라이브 웹검색(research_queries) 그라운딩만 사용 — 버킷 없음.
   # 승격 시 website-crawler로 kosaf/대학 공지를 적재한 버킷을 여기 붙인다.
   retrieval_required: false
+
+# agent_packs.py 에서 이관 — 값은 코드 매니페스트와 바이트 동일(왕복 검증됨).
+document_hierarchy:
+  template_id: "schift_scholarship_digest_v1"
+  title: "장학금 다이제스트"
+  kind: "document"
+  delivery:
+    mode: "api_digest"
+    cron_via: "cloud_scheduler"
+    consumer: "phedy"
+  knowledge:
+    retrieval_required: false
+    source_strategy: "hybrid_live_websearch_then_crawler_bucket"
+  research_queries:
+    - "한국장학재단 2026 국가장학금 신청기간 자격 소득분위 kosaf.go.kr"
+    - "한국장학재단 우수장학금 국가근로장학금 2026 모집 공고 kosaf.go.kr"
+    - "대학교 교내장학금 교외장학금 2026 신청 공고 ac.kr 학생지원처"
+    - "장학재단 기업 장학금 2026 대학생 모집 공고 or.kr 신청기간"
+    - "지자체 공공기관 대학생 장학금 2026 공고 go.kr 신청"
+  sections:
+    - id: "1"
+      title: "검색 조건 요약"
+      prompt: "학생 조건(학교, 학부/대학원, 전공·학과, 학년, GPA, 소득분위, 기관 유형 선호)을 한 줄로 요약한다. 개인정보 원문이 아니라 조건 요약만 남긴다."
+    - id: "2"
+      title: "한국장학재단 전국 공고"
+      prompt: "kosaf.go.kr 공식 공고에서 국가장학금·국가근로·우수장학금 등을 장학금명·금액·자격·신청기간·링크로 정규화한다. 공식 출처로 확인된 것만."
+    - id: "3"
+      title: "학교·재단·기업·공공기관 공고"
+      prompt: "지정 학교(*.ac.kr)와 재단·기업·공공기관(*.or.kr/*.go.kr) 공식 공고를 같은 형식으로 정규화한다. 블로그·커뮤니티는 리드로만 쓰고 미검증이면 제외한다."
+    - id: "4"
+      title: "상태 분류 (KST)"
+      prompt: "주입된 '오늘 날짜(KST)' 대비 각 공고를 지금 지원 가능/곧 열림/마감됨으로 분류한다. 분류는 오직 마감일 vs 오늘 비교로만 — '2026년 1학기'·'현재 학기' 같은 학기 라벨에 속지 말 것. 마감일이 오늘보다 과거면 학기가 진행 중이어도 무조건 마감됨. 마감 7일 이내(마감일이 오늘 이후)만 '마감 임박'으로 최상단. '예정/미정' 기간엔 임박을 붙이지 말고 곧 열림 또는 [기간 확인 필요]."
+    - id: "5"
+      title: "적격성 + 다음 행동"
+      prompt: "학생 조건과 자격요건을 대조해 지원 가능/대상 아님/본인 확인 필요로 표시하고, 공고별 신청 링크와 다음 행동을 정리한다. 애매하면 단정하지 않는다."
+    - id: "6"
+      title: "사람 확인 필요"
+      prompt: "불확실한 기간·금액·자격, 미검증 출처, 마감 임박 알림 등 사람이 확인해야 하는 항목만 모은다."
+non_runnable_agent_ids:
+  - "scholarship-review-agent"
+qc_enabled: true
+sub_agent_plan:
+  - id: "scholarship-intake-agent"
+    name: "Intake Agent"
+    owns_sections:
+      - "1"
+    purpose: "학생 조건(프로필)을 검색 단위로 정리하고 비어 있으면 전국 단위 기본값을 세운다."
+    required_memory:
+      - "document_hierarchy"
+    output: "student_profile"
+    generation:
+      max_tokens: 1800
+      temperature: 0.2
+      timeout_seconds: 120
+  - id: "scholarship-kosaf-agent"
+    name: "KOSAF Research Agent"
+    owns_sections:
+      - "2"
+    purpose: "한국장학재단 공식 공고를 웹검색 근거로 정규화한다."
+    required_memory:
+      - "document_hierarchy"
+      - "student_profile"
+    output: "kosaf_postings"
+    generation:
+      max_tokens: 3000
+      temperature: 0.1
+      timeout_seconds: 180
+  - id: "scholarship-source-agent"
+    name: "Source Research Agent"
+    owns_sections:
+      - "3"
+    purpose: "학교·재단·기업·공공기관 공식 공고를 웹검색 근거로 정규화하고 중복을 제거한다."
+    required_memory:
+      - "document_hierarchy"
+      - "student_profile"
+    output: "other_postings"
+    generation:
+      max_tokens: 3600
+      temperature: 0.1
+      timeout_seconds: 240
+  - id: "scholarship-digest-agent"
+    name: "Digest Agent"
+    owns_sections:
+      - "4"
+      - "5"
+    purpose: "수집 공고를 KST 상태로 분류하고 학생 조건 적격성을 판정해 다이제스트로 정렬한다."
+    required_memory:
+      - "document_hierarchy"
+      - "student_profile"
+      - "kosaf_postings"
+      - "other_postings"
+    output: "scholarship_digest"
+    generation:
+      max_tokens: 4096
+      temperature: 0.2
+      timeout_seconds: 240
+  - id: "scholarship-review-agent"
+    name: "Review Agent"
+    owns_sections:
+      - "6"
+    purpose: "사람이 확인할 불확실 항목과 마감 임박 알림을 남긴다."
+    required_memory:
+      - "document_hierarchy"
+    output: "human_review"
+    generation:
+      max_tokens: 0
+      temperature: 0.0
+      timeout_seconds: 0
+artifacts:
+  html_artifact_title: "장학금 다이제스트.html"
+  markdown_artifact_title: "장학금 다이제스트.md"

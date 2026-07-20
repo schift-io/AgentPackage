@@ -76,6 +76,33 @@ def _version_of(manifest: dict) -> str:
 
 
 def build_pack(pack_dir: Path) -> dict:
+    # `pack.json` 이 있으면 그게 canonical 매니페스트다. 파생을 거치지 않으므로
+    # **누가 빌드하든 같은 매니페스트 → 같은 hash** 다. 예전엔 이쪽은 apm.yml raw,
+    # agent-hub 는 파이썬 상수 기반이라 같은 팩·같은 버전에 다른 hash 가 나왔고
+    # (실측 zodal@0.1.4: 4e675c7e vs a38ae237) 그래서 두 발행자를 동시에 켤 수 없었다.
+    pack_json = pack_dir / "pack.json"
+    if pack_json.is_file():
+        manifest = json.loads(pack_json.read_text(encoding="utf-8"))
+        manifest.setdefault("agent_id", pack_dir.name.removesuffix(".agent"))
+        acl_source = _load_yaml(pack_dir / "apm.yml")
+        files = {
+            str(p.relative_to(pack_dir)): p.read_bytes()
+            for p in sorted(pack_dir.rglob("*"))
+            if p.is_file() and "__pycache__" not in p.parts
+        }
+        blob, chash = build_apm_bundle(manifest, files)
+        built = {
+            "agent_id": str(manifest["agent_id"]),
+            "version": _version_of(manifest),
+            "content_hash": chash,
+            "blob": blob,
+            "size_bytes": len(blob),
+        }
+        # ACL 은 여전히 apm.yml 최상위 선언에서 읽는다 — ref 등록 메타라
+        # 매니페스트 스키마에 실리지 않는다.
+        built.update(_acl_from_manifest(acl_source))
+        return built
+
     manifest = _load_yaml(pack_dir / "apm.yml")
     manifest = dict(manifest)
     manifest.setdefault("agent_id", pack_dir.name.removesuffix(".agent"))

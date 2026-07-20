@@ -1,4 +1,5 @@
 name: room821-contract-writer-agent
+display_name: "Room821 Contract-Writer Agent"
 version: 0.1.2
 description: >-
   계약서/MOU 작성 유틸 에이전트(베타, 스캐폴딩만 — 미배선/미등록). bid-response.agent
@@ -97,3 +98,32 @@ scaffold_status:
                                 # 오케스트레이터 디스패치, HWPX 완료 시 channel notice 핸드오프).
                                 # 활성화는 배포 후 org DB flag flip만 남음
                                 # (PUT /v1/admin/orgs/{org}/feature-flags/contract_writer).
+
+# agent_packs.py 에서 이관 — 값은 코드 매니페스트와 바이트 동일(왕복 검증됨).
+document_hierarchy:
+  template_id: "room821_contract_writer_v1"
+  title: "계약서 초안 검토본"
+  kind: "document"
+  knowledge:
+    retrieval_required: false
+    source_strategy: "structured_intake_plus_template_only"
+  sections:
+    - id: "1"
+      title: "계약 유형·intake"
+      prompt: "MOU/NDA/용역계약/공동사업협약 중 유형을 확인하고, 당사자·목적·범위·기간·대가·특약을 구조화한다. 누락 필드는 [확인 필요] 질문으로 되묻는다."
+    - id: "2"
+      title: "조항 초안"
+      prompt: "선택 유형의 표준 조항 템플릿에 intake 값을 채워 제N조 형식 markdown을 렌더링한다. 확정 못 하는 값은 항상 [확인 필요]로 남긴다."
+    - id: "3"
+      title: "검토 게이트"
+      prompt: "필수 조항 누락, 당사자명 불일치, 기간/대가 공백, 법률 자문성 문구, 창조 수치를 검사한다. passed=False면 다음 단계로 진행하지 않는다."
+    - id: "4"
+      title: "HWPX 패키징"
+      prompt: "게이트 통과 시에만 markdown을 HWPX로 변환한다(document-helper 재사용). DOCX로 대체하지 않는다."
+    - id: "5"
+      title: "런 리포트 / 사람 확인"
+      prompt: "조항 수·placeholder 잔여·게이트 결과·처리시간을 요약한다. 마지막 섹션은 항상 제출·서명 전 검수 체크(사람 확인)로 남긴다."
+qc_enabled: true
+artifacts:
+  html_artifact_title: "계약서 초안 검토본.html"
+  markdown_artifact_title: "계약서 초안 검토본.md"

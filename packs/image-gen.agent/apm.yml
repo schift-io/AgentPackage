@@ -1,4 +1,5 @@
 name: room821-image-gen-agent
+display_name: "Room821 Image Generation Agent"
 version: 0.2.2
 description: >-
   이미지 생성 APM. gongnyang-prompt-kit V2.4의 한국어 hwabo 원본과 라우터 레퍼런스를
@@ -127,3 +128,33 @@ runtime_boundary:
     - model_profile_axis_weighting
     - validation_whitelist_policy
     - billing_metering_policy
+
+# agent_packs.py 에서 이관 — 값은 코드 매니페스트와 바이트 동일(왕복 검증됨).
+document_hierarchy:
+  template_id: "room821_image_gen_v1"
+  title: "이미지 생성 패킷"
+  kind: "document"
+  knowledge:
+    retrieval_required: false
+    source_strategy: "none"
+  sections:
+    - id: "1"
+      title: "요청 파악"
+      prompt: "자연어 요청 + (있으면) 카테고리/룩 프리셋/해상도/타깃 모델/배경/HEX 팔레트/이미지 내 텍스트를 정리한다."
+    - id: "2"
+      title: "컴파일"
+      prompt: "compile_image_prompt 툴을 호출해 compiled_prompt/format/ar/api_size/validation을 받는다. 직접 프롬프트를 재작성하지 않는다."
+    - id: "3"
+      title: "검증 게이트"
+      prompt: "validation.passed=false면 hard_fails를 설명하고 생성을 진행하지 않는다. warnings는 표시만 하고 진행 가능."
+    - id: "4"
+      title: "승인 + 생성"
+      prompt: "compiled_prompt/api_size/예상 크레딧을 요약해 승인받고 generate_image를 호출한다."
+    - id: "5"
+      title: "[선택] 에이전틱 보정"
+      prompt: "사용자가 다듬기를 요청하거나 text-in-image 결과면 자가비평 -> 리파인 -> 재생성 루프를 제안한다(최대 2회)."
+artifacts:
+  markdown_title: "이미지 생성 검토본"
+  html_artifact_title: "이미지 생성 검토본.html"
+  markdown_artifact_title: "이미지 생성 검토본.md"
+  visual_assets_enabled: true

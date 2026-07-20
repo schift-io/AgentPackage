@@ -1,4 +1,5 @@
 name: room821-ad-creative-agent
+display_name: "Room821 Ad Creative Agent"
 version: 0.1.2
 description: >-
   AI 광고 크리에이티브 APM. Ogilvy DO BRIEF(구조화 intake) → 세그먼트 팬아웃 →
@@ -91,3 +92,33 @@ runtime_boundary:
     - anchor_text_policy
     - shot_grammar_policy
     - billing_metering_policy
+
+# agent_packs.py 에서 이관 — 값은 코드 매니페스트와 바이트 동일(왕복 검증됨).
+document_hierarchy:
+  template_id: "room821_ad_creative_v1"
+  title: "광고 스토리보드 패킷"
+  kind: "document"
+  knowledge:
+    retrieval_required: false
+    source_strategy: "brand_bucket_rag"
+  sections:
+    - id: "1"
+      title: "Ogilvy 브리프"
+      prompt: "Ogilvy DO BRIEF 11필드를 브랜드 버킷/사용자 입력에서 채운다. 모르는 값은 지어내지 말고 'MISSING — ask'로 표시해 ≤3개 질문으로 묶어 묻는다. 6요소(Hook·Pain·Value·Offer·Urgency·CTA) 커버리지를 생성 전에 검증한다."
+    - id: "2"
+      title: "세그먼트"
+      prompt: "브리프의 타깃을 5축 중 하나로 2~4개 세그먼트로 나눈다. 세그먼트마다 감정 드라이버·실제 어투·동기·장벽·소통 선호를 파생한다. 인구통계가 아니라 감정으로 차별화한다."
+    - id: "3"
+      title: "캐릭터 시트"
+      prompt: "세그먼트당 캐릭터를 JSON identity 시트 + 히어로 레퍼런스 + face-ref로 고정한다. 제품이 노출되면 제품 앵커(로고·패키징·색)도 고정한다."
+    - id: "4"
+      title: "스토리보드 (grid 초안)"
+      prompt: "MEGA-ANCHOR 레시피로 매 컷 프롬프트 앞에 [환경][캐릭터][의상][제품] 앵커를 concat한다. 초안은 grid 1장으로 뽑는다. 승인 전에는 컷마다 개별 생성하지 않는다."
+    - id: "5"
+      title: "QC / 사람 확인"
+      prompt: "17점 스코어카드 + vision 일관성 스코어러로 채점하고, 미달 컷만 앵커를 보정해 재생성한다. 이미지 생성·업스케일·render 확정 전 세그먼트·컷 수·예상 원가를 사람이 승인한다."
+artifacts:
+  markdown_title: "광고 스토리보드 검토본"
+  html_artifact_title: "광고 스토리보드 검토본.html"
+  markdown_artifact_title: "광고 스토리보드 검토본.md"
+  visual_assets_enabled: true

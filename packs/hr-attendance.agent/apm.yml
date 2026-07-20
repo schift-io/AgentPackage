@@ -1,4 +1,5 @@
 name: schift-hr-attendance-agent
+display_name: "Schift HR/Attendance Agent"
 version: 0.1.3
 description: >
   Schift HR/근태 APM. 직원의 휴가·근태 신청을 규제 Agent(법률·회칙)와
@@ -80,3 +81,73 @@ tool_policy:
     - arbitrary_filesystem_crawl
     - payroll_amount_calculation
     - legal_final_judgement
+
+# agent_packs.py 에서 이관 — 값은 코드 매니페스트와 바이트 동일(왕복 검증됨).
+document_hierarchy:
+  template_id: "schift_hr_attendance_leave_approval_v1"
+  title: "HR/근태"
+  kind: "document"
+  channel:
+    type: "multi"
+    install_mode: "per_tenant_oauth"
+    providers:
+      - "discord"
+      - "slack"
+      - "telegram"
+    commands:
+      - name: "leave"
+        ko_name: "휴가"
+        awp_operation: "hr_attendance.leave_request"
+      - name: "status"
+        ko_name: "휴가-상태"
+        awp_operation: "hr_attendance.leave_status"
+      - name: "supplement"
+        ko_name: "휴가-보완"
+        awp_operation: "hr_attendance.leave_supplement"
+  knowledge:
+    bucket_id: "kr-labor-law-reference"
+    bucket_role: "regulation_reference"
+    retrieval_required: true
+  sections:
+    - id: "1"
+      title: "접수 요약"
+      prompt: "신청자, 휴가 유형, 기간, 일수, 사유를 간단히 정리합니다."
+    - id: "2"
+      title: "규제 Agent 검토"
+      prompt: "근로기준법·회칙 검토 결과와 위반 가능성을 요약합니다."
+    - id: "3"
+      title: "인사 Agent 검토"
+      prompt: "팀 커버리지, 결재선, 잔여 연차 등 조직 운영 검토를 요약합니다."
+    - id: "4"
+      title: "사람 확인이 필요한 항목"
+      prompt: "Agent가 확정하지 못하거나 사람이 반드시 확인해야 할 항목을 나열합니다."
+qc_enabled: true
+sub_agent_plan:
+  - id: "leave-intake"
+    name: "신청 정규화"
+    label: "신청 정규화"
+    owns_sections:
+      - "1"
+    runnable: true
+  - id: "regulation-review"
+    name: "규제 검토"
+    label: "규제 검토"
+    owns_sections:
+      - "2"
+    runnable: true
+  - id: "hr-hrops-review"
+    name: "인사 검토"
+    label: "인사 검토"
+    owns_sections:
+      - "3"
+    runnable: true
+  - id: "approval-dispatch"
+    name: "결정 합성"
+    label: "결정 합성"
+    owns_sections:
+      - "4"
+    runnable: true
+artifacts:
+  markdown_title: "HR/근태 검토 리포트"
+  html_artifact_title: "hr_attendance_review.html"
+  markdown_artifact_title: "hr_attendance_review.md"

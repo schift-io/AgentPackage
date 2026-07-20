@@ -1,4 +1,5 @@
 name: room821-bizplan-agent
+display_name: "Business Plan Agent"
 version: 0.2.2
 description: Room821 business-plan (수행계획서) agent package.
 extends: ../runtime.yml
@@ -35,3 +36,94 @@ skills:
     runtime: schift-memory
   - id: room821/skills/bizplan-reviewer
     runtime: agent-hub
+
+# agent_packs.py 에서 이관 — 값은 코드 매니페스트와 바이트 동일(왕복 검증됨).
+customizable: true
+document_hierarchy:
+  template_id: "schift_bizplan_psst_v1"
+  title: "사업계획서"
+  kind: "document"
+  research_queries: []
+  required_sections:
+    - "1"
+    - "2"
+    - "3"
+    - "4"
+  input_contract:
+    required:
+      - "notice_outline"
+      - "evaluation_criteria"
+      - "organization_profile"
+      - "source_forms"
+    optional:
+      - "budget_constraints"
+      - "schedule"
+      - "supporting_evidence"
+  sections:
+    - id: "1"
+      title: "문제인식 (Problem)"
+      prompt: "공고와 제공 자료에 근거해 해결해야 할 문제와 추진 배경을 작성한다."
+    - id: "2"
+      title: "해결방안 (Solution)"
+      prompt: "제안하는 해결방안, 구현 방법, 차별점과 검증 방법을 작성한다."
+    - id: "3"
+      title: "성장전략 (Scale)"
+      prompt: "실행계획, 시장·사업화 전략, 예산·일정과 기대효과를 작성한다."
+    - id: "4"
+      title: "팀구성 (Team)"
+      prompt: "조직, 역할, 역량, 협력 구조와 사업 수행 책임을 작성한다."
+non_runnable_agent_ids:
+  - "chart-visual-asset-agent"
+  - "proposal-review-agent"
+qc_enabled: true
+sub_agent_plan:
+  - id: "bizplan-writer-1-agent"
+    name: "Writer 1 Agent"
+    owns_sections:
+      - "1"
+      - "2"
+    purpose: "문제인식 (Problem) · 해결방안 (Solution) 섹션을 공고·양식과 제공된 근거에 맞춰 작성한다."
+    required_memory:
+      - "document_hierarchy"
+      - "source_documents"
+    output: "sections_1_2"
+    generation:
+      max_tokens: 4096
+      temperature: 0.3
+      timeout_seconds: 240
+  - id: "bizplan-writer-2-agent"
+    name: "Writer 2 Agent"
+    owns_sections:
+      - "3"
+      - "4"
+    purpose: "성장전략 (Scale) · 팀구성 (Team) 섹션을 공고·양식과 제공된 근거에 맞춰 작성한다."
+    required_memory:
+      - "document_hierarchy"
+      - "source_documents"
+    output: "sections_3_4"
+    generation:
+      max_tokens: 4096
+      temperature: 0.3
+      timeout_seconds: 240
+  - id: "proposal-review-agent"
+    name: "Proposal Review Agent"
+    owns_sections:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+    purpose: "전체 섹션의 양식 준수, 근거 연결, 수치와 제출 가능 여부를 검토한다."
+    required_memory:
+      - "all_section_drafts"
+      - "document_hierarchy"
+    output: "review_findings_and_final_patch"
+    generation:
+      max_tokens: 4096
+      temperature: 0.1
+      timeout_seconds: 240
+artifacts:
+  markdown_title: "사업계획서 제출 검토본"
+  html_artifact_title: "사업계획서 제출 검토본.html"
+  include_required_tables: true
+  markdown_artifact_title: "사업계획서 제출 검토본.md"
+  visual_assets_enabled: true

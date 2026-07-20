@@ -1,4 +1,5 @@
 name: room821-cardnews-agent
+display_name: "Room821 Cardnews Agent"
 version: 0.1.2
 description: Marketing card-news agent package. Hook → body → CTA frame (마케터 산출물 — IR 프레임 미적용).
 extends: ../runtime.yml
@@ -40,3 +41,258 @@ references:
   - apm/deck.agent/skills/deck-designer/references/color-palettes.md
   # 카드뉴스 구성 템플릿/훅 공식/레이아웃 레퍼런스 (cardnews-generator 소유)
   - apm/cardnews.agent/skills/cardnews-generator/references/card-templates.md
+
+# agent_packs.py 에서 이관 — 값은 코드 매니페스트와 바이트 동일(왕복 검증됨).
+document_hierarchy:
+  template_id: "room821_cardnews_8_2026_06"
+  title: "카드뉴스 8장 프레임"
+  kind: "cardnews"
+  criteria_rule: "유저가 채널/캠페인 브리프를 주면 그 목표(도달/저장/클릭)를 그대로 판단 기준으로 쓴다. 없으면 저장 수 최적화를 기본 목표로 한다."
+  criteria_keywords:
+    - "훅"
+    - "CTA"
+    - "저장"
+    - "팔로우"
+    - "Threads"
+    - "Instagram"
+  design_contract:
+    palette_source: "apm/deck.agent/skills/deck-designer/references/color-palettes.md"
+    default_palette: "customer-brand-kit-or-neutral"
+    card_size: "1080x1350"
+  image_quality_gate:
+    enabled: true
+    images_async: true
+    prefer_generated: false
+    generate_fallback: true
+    candidate_limit: 12
+    min_width: 720
+    min_height: 720
+    reject_url_markers:
+      - "encrypted-tbn"
+      - "lookaside.instagram.com"
+      - "lookaside.fbsbx.com"
+      - "/260nw-"
+      - "slideteam.net"
+      - "slidemodel.com"
+      - "slidesgo.com"
+      - "slidescarnival"
+      - "shutterstock.com"
+      - "istockphoto.com"
+      - "gettyimages."
+      - "123rf.com"
+      - "dreamstime.com"
+      - "alamy.com"
+      - "depositphotos.com"
+      - "watermark"
+    retry_query_templates:
+      - "{query} high resolution editorial photo"
+      - "{query} vertical 4:5 high resolution photo"
+      - "{query} office workplace photo"
+      - "korean small business customer service photo"
+    failure_status: "NEEDS_IMAGE_SOURCE"
+  sections:
+    - id: "1"
+      title: "Title / 훅"
+      prompt: "스크롤을 멈추는 훅 1문장을 **카드 title에 반드시 채운다(빈 카드 금지)**. 숫자·반전·질문 중 하나. 더 강한 쪽을 골라 쓰되, 대안 비교 과정·작업 노트·메타 설명은 넣지 말고 **선택된 최종 훅 카피 한 줄만** 출력한다. 절대 title을 비워 내보내지 않는다."
+    - id: "2"
+      title: "공감/문제 확대"
+      prompt: "왜 이게 '당신' 얘기인가. 타깃이 어제 실제로 겪은 **구체적 장면 하나**(시간·상황·감정)로 시작한다. claim=공감 한 줄. details=그 장면의 디테일 1줄 + 그게 부르는 비용/리스크 1줄(막연한 '힘들다' 금지, 무엇이 어떻게 새는지 구체로) + '이미지: <장면>' 1줄. **빈 카드/한 줄짜리 부실 금지.**"
+    - id: "3"
+      title: "Body 1"
+      prompt: "핵심 포인트 1개를 **실질적으로** 전개. claim=헤드라인(이득 중심). details=① 어떻게 작동/해결되는지 메커니즘 1줄 ② 그래서 사용자가 얻는 구체적 이득(가능하면 수치·시간·빈도) 1줄 ③ 신뢰를 더하는 예시/디테일 1줄, + '이미지: <카드 배경 장면 묘사>' 1줄. **추상적 슬로건만 두지 말고 구체로 채운다.** title만 내고 details 비우지 말 것."
+    - id: "4"
+      title: "Body 2"
+      prompt: "다른 포인트 1개. claim(이득 헤드라인) + details=메커니즘 1줄·구체 이득(수치/예시) 1줄·근거 1줄 + '이미지: <장면>' 1줄 필수. 카드 3과 다른 각도·다른 장면. **부실한 한 줄 금지.**"
+    - id: "5"
+      title: "Body 3"
+      prompt: "또 다른 포인트 1개. claim(이득 헤드라인) + details=메커니즘 1줄·구체 이득(수치/예시) 1줄·근거 1줄 + '이미지: <장면>' 1줄 필수. 앞 카드들과 다른 각도·다른 장면. **부실한 한 줄 금지.**"
+    - id: "6"
+      title: "증거/사례"
+      prompt: "청중이 원하는 결과 중심 — 고객/사용자의 **전·후 변화**를 구체적으로. claim=결과 한 줄. details=① 도입 전 상태 1줄 ② 도입 후 변화(수치·기간 포함) 1줄 ③ 짧은 실제 후기 톤 1줄(수치엔 출처 캡션), + '이미지: <장면>' 1줄. 우리 입장 지표(재등록률 등)는 청중 이득으로 번역해 보조로만. **부실 금지.**"
+    - id: "7"
+      title: "Body 요약/저장"
+      prompt: "본문 3개를 1장으로 요약. claim=한 줄 요약. details=본문 핵심 3개를 각 1줄(짧은 개조식)로 재진술 + 저장 유도 1줄. 새 논리나 새 수치는 넣지 않는다. **요약이라고 한 줄로 끝내지 말고 3포인트를 다 담는다.**"
+    - id: "8"
+      title: "End / 브랜드 클로징"
+      prompt: "고객 브랜드 키트를 따르는 마지막 브랜드 카드. 새 정보를 추가하지 말고 입력 메모리에 제공된 고객 로고/브랜드명/짧은 태그라인/단일 CTA/URL 또는 핸들만 둔다. 없으면 로고·URL·핸들을 지어내지 않는다. 앞 카드의 핵심을 한 줄로 재사용해 브랜드 기억으로 닫는다."
+  default_style_variant_id: "classic_overlay_v1"
+  style_variants:
+    classic_overlay_v1:
+      id: "classic_overlay_v1"
+      name: "Classic Full-Bleed Overlay"
+      layout_preset: "classic_overlay"
+      description: "Default cardnews layout: one full-bleed image per card with a black overlay and large copy in the safe area."
+      visual_guidelines:
+        layout: "full-bleed image background, black overlay, large copy overlay"
+        black_overlay: "40-65% depending on image brightness"
+        safe_area: "top and bottom padding at least 96px"
+      design_contract:
+        reference_label: "기본 이미지 오버레이 카드뉴스"
+        canvas: "1080x1350 vertical card"
+        image_treatment: "full-bleed image, brightness -4%, contrast balanced"
+        overlay: "single black overlay 40-65% adjusted to image brightness"
+        copy_zone: "large centered or lower-safe headline, 96px+ edge padding"
+        typography: "one strong headline, optional short detail only"
+        avoid:
+          - "image-less white editorial cards"
+          - "visible production labels"
+          - "long paragraph copy"
+    sns_magazine_carousel_v1:
+      id: "sns_magazine_carousel_v1"
+      style_number: "st1"
+      name: "SNS Magazine Carousel"
+      layout_preset: "tripgoing_magazine_carousel"
+      description: "Instagram magazine carousel structure: cover, lower-third item slides, save-summary slide, and centered CTA slide."
+      card_roles:
+        1: "cover"
+        2: "item"
+        3: "item"
+        4: "item"
+        5: "item"
+        6: "item"
+        7: "summary"
+        8: "cta"
+      visual_guidelines:
+        layout: "full-bleed image background with black overlay; cover uses centered hook, item cards use lower-third title/caption, CTA uses centered action module"
+        layout_reference: "Tripgoing-style Instagram magazine carousel: cover, lower-third item cards, centered CTA"
+        safe_area: "top and bottom padding at least 96px; item copy sits in the lower 18-32% gradient-safe zone"
+        black_overlay: "cover/CTA 45-70%; item card bottom gradient 10-72%"
+        footer_behavior: "footer labels and dots stay secondary, bottom-centered, and consistent across all slides"
+        forbidden:
+          - "using production labels such as 1장 썸네일 or Body 1 as visible copy"
+          - "making every slide a large title card"
+          - "caption-length copy on item slides"
+      design_contract:
+        reference_label: "st1 Tripgoing-like magazine carousel"
+        source_reference_status: "user-provided screenshots; structure referenced, brand not copied"
+        canvas: "1080x1350 vertical Instagram carousel"
+        image_treatment: "high-resolution travel/editorial photo, full-bleed crop, saturated but not posterized"
+        overlay: "cover/CTA black overlay 45-70%; item cards use bottom gradient 10-72%"
+        copy_zone: "cover centered; item slides lower-third; CTA centered action module"
+        typography: "bold Korean headline, short 1-2 line support copy, no section labels"
+        navigation: "bottom dots and secondary footer marks only; no Instagram chrome"
+        cta: "final card uses centered follow/save/action module over image"
+        avoid:
+          - "every slide becoming a title slide"
+          - "low-resolution thumbnails"
+          - "caption paragraphs longer than 2-3 lines"
+    st2_myrealtrip_feed_v1:
+      id: "st2_myrealtrip_feed_v1"
+      style_number: "st2"
+      name: "MyRealTrip Feed Carousel"
+      layout_preset: "myrealtrip_feed_carousel"
+      description: "Feed-style Instagram carousel: square full-bleed photos, strong bottom gradient, left-aligned hook/item copy, and a phone/link CTA."
+      card_size: "1080x1080"
+      card_roles:
+        1: "cover"
+        2: "item"
+        3: "item"
+        4: "item"
+        5: "item"
+        6: "item"
+        7: "summary"
+        8: "cta"
+      visual_guidelines:
+        layout: "square feed carousel; cover and item cards use lower-left headline/caption over a heavy bottom gradient; CTA uses a centered phone/link module"
+        layout_reference: "MyRealTrip-style Instagram feed carousel: punchy lower-left headline, item captions, phone/link CTA"
+        safe_area: "side padding 82-96px; copy lives in the lower 22-42%; dots stay bottom-centered above the safe edge"
+        black_overlay: "bottom gradient 8-82%; CTA full overlay 35-72%"
+        footer_behavior: "dots only by default; account/profile UI is external chrome"
+        forbidden:
+          - "using Instagram side arrows or feed chrome inside generated cards"
+          - "placing body copy outside the dark lower gradient"
+          - "making item slides center-title cards"
+          - "caption-length copy beyond 2-3 lines"
+      design_contract:
+        reference_label: "st2 MyRealTrip-like feed carousel"
+        source_reference_status: "user-provided screenshots; layout behavior referenced, brand not copied"
+        canvas: "1080x1080 square Instagram feed card"
+        image_treatment: "sharp real-world photo, object-fit cover, no decorative placeholder"
+        overlay: "bottom black gradient 8-82%; CTA full overlay 35-72%"
+        copy_zone: "lower-left 22-42% for cover and item copy, 82-96px side padding"
+        typography: "large left-aligned hook, item title plus compact description"
+        navigation: "dots only; ignore side arrows and feed UI chrome"
+        cta: "phone/profile/link module on final card"
+        avoid:
+          - "placing body copy outside the dark lower gradient"
+          - "center-title item cards"
+          - "including Instagram carousel arrows inside generated assets"
+non_runnable_agent_ids:
+  - "cardnews-qc-agent"
+qc_enabled: true
+sub_agent_plan:
+  - id: "cardnews-hook-agent"
+    name: "Cardnews Hook Agent"
+    owns_sections:
+      - "1"
+      - "2"
+    purpose: "훅 대안 2개+선택과 공감 카드를 작성한다. 타깃의 고통/호기심 1문장 승부."
+    required_memory:
+      - "document_hierarchy"
+      - "campaign_brief"
+      - "company_profile"
+      - "brand_kit"
+    output: "hook_and_empathy_cards"
+    generation:
+      max_tokens: 2500
+      temperature: 0.3
+      timeout_seconds: 180
+  - id: "cardnews-body-agent"
+    name: "Cardnews Body Agent"
+    owns_sections:
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+    purpose: "본문 포인트 3장과 증거 카드를 작성한다. 카드당 포인트 1개, 수치엔 출처."
+    required_memory:
+      - "document_hierarchy"
+      - "company_profile"
+      - "source_documents"
+      - "brand_kit"
+    output: "body_and_proof_cards"
+    generation:
+      max_tokens: 4096
+      temperature: 0.3
+      timeout_seconds: 240
+  - id: "cardnews-cta-agent"
+    name: "Cardnews CTA Agent"
+    owns_sections:
+      - "7"
+      - "8"
+    purpose: "요약 카드와 단일 CTA 카드, 채널별 캡션/해시태그/게시 시간 제안을 작성한다."
+    required_memory:
+      - "document_hierarchy"
+      - "campaign_brief"
+      - "brand_kit"
+    output: "summary_cta_and_captions"
+    generation:
+      max_tokens: 2500
+      temperature: 0.3
+      timeout_seconds: 180
+  - id: "cardnews-qc-agent"
+    name: "Cardnews QC Agent (Devil's Advocate)"
+    owns_sections:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+      - "7"
+      - "8"
+    purpose: "deck-qc 스킬로 훅 강도·사실 정확성·톤 일관성을 판정하고 남은 가정을 유저 확인 질문으로 보고한다."
+    required_memory:
+      - "all_section_drafts"
+      - "submission_writer_skill"
+      - "brand_kit"
+    output: "qc_findings_and_user_confirmations"
+    generation:
+      max_tokens: 3000
+      temperature: 0.1
+      timeout_seconds: 240
+artifacts:
+  html_renderer: "cardnews"
+  markdown_title: "Room821 카드뉴스 검토본 (8장 프레임)"
+  html_artifact_title: "Room821 카드뉴스 검토본.html"
+  markdown_artifact_title: "Room821 카드뉴스 검토본.md"

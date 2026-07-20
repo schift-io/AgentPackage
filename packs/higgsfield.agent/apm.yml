@@ -1,4 +1,5 @@
 name: room821-higgsfield-agent
+display_name: "Room821 Higgsfield Directing Agent"
 version: 0.1.3
 description: >-
   연출 전용 APM. 오픈 연출 버킷(higgsfield-directing)에서 샷 문법·광원·카메라워크·
@@ -131,3 +132,38 @@ tools:
     description: >-
       Threads 파트용 이미지를 생성한다. args: prompt(필수), role?,
       size?(1536x1024 권장), ref_images?[]. 반환 JSON에 url이 포함된다.
+
+# agent_packs.py 에서 이관 — 값은 코드 매니페스트와 바이트 동일(왕복 검증됨).
+document_hierarchy:
+  template_id: "room821_higgsfield_v1"
+  title: "연출 스토리보드·클립 패킷"
+  kind: "document"
+  knowledge:
+    bucket_id: "cf881f88e1cd491e944fa199f0eaf7c1"
+    bucket_name: "higgsfield-directing"
+    bucket_role: "directing_reference"
+    retrieval_required: true
+    source_strategy: "directing_bucket_rag"
+  sections:
+    - id: "1"
+      title: "연출 브리프"
+      prompt: "의도·톤·레퍼런스·포맷/길이를 채운다. 모르는 값은 지어내지 말고 'MISSING — ask'로 표시해 ≤3개 질문으로 묶는다. 포맷(aspect_ratio)·길이(duration_sec) 없이 진행하지 않는다."
+    - id: "2"
+      title: "샷 리스트"
+      prompt: "enum 샷 문법(카메라 앵글/사이즈) + 한 개의 motivated 광원 + 분위기로 샷을 나열한다. scene_beat(ESTABLISH/INCITE/REVEAL/ESCALATE/CLIMAX/RESOLVE/TRANSITION)을 쓰고 자유텍스트는 금지한다."
+    - id: "3"
+      title: "무브먼트"
+      prompt: "각 컷에 camera_movement/subject_motion/motion_intensity/transition을 필수로 배치한다. 무브먼트는 imgs2vid 품질의 1급 시민이다."
+    - id: "4"
+      title: "프롬프트 · grid 초안"
+      prompt: "MEGA-ANCHOR 변형 레시피로 매 컷 프롬프트 앞에 [환경][피사체][의상][분위기] 앵커를 concat하고, realism+negative(비디오 전용 포함)를 붙인다. 초안은 grid 1장으로 뽑고 승인 전에는 컷마다 개별 생성하지 않는다."
+    - id: "5"
+      title: "클립 · 스티치"
+      prompt: "승인된 패널만 tools/list로 발견한 video tool에 전달한다. 기본 모델은 seedance_2_0이며 2~6초는 Schift 편집 가드레일이다. 실제 입력 스키마와 비용은 MCP discovery·provider preflight를 정본으로 삼고, 반환된 클립은 전환 순서대로 스티치한다."
+    - id: "6"
+      title: "QC / 사람 확인"
+      prompt: "일관성 + 안전을 pre-render·pre-ship 두 번 채점하고 미달 컷만 앵커 보정 재생성한다. grid 생성·패널 확정·imgs2vid·stitch 전 샷 구성·앵커·클립 수·예상 원가를 사람이 승인한다."
+artifacts:
+  html_artifact_title: "연출 스토리보드·클립 패킷.html"
+  markdown_artifact_title: "연출 스토리보드·클립 패킷.md"
+  visual_assets_enabled: true

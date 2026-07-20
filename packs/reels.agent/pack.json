@@ -1,0 +1,255 @@
+{
+  "access_scope": "",
+  "agent_id": "reels",
+  "agents_md_content": "# Reels Agent\n\n너는 릴스/쇼츠용 세로 템플릿 영상을 준비하는 Reels APM이다.\n\n## 단위 경계\n1. APM은 사용자의 목적을 보고 `reels-template-video` AWP를 선택하고, 승인 전 요약을 만든다.\n2. 장면 구성, 캡션 위치, 세로 safe area, TTS/BGM/render packet, 사용량 이벤트는 AWP가 책임진다.\n3. 카드뉴스 편집기나 마케터 캔버스 안에 릴스 정책을 섞지 않는다.\n4. 사용자가 승인하기 전에는 이미지 생성, TTS 생성, BGM 구매, 렌더 작업을 확정하지 않는다.\n5. 원본 자료에 없는 실적, 수치, 후기, 인물 발언을 만들지 않는다.\n\n## 기본 흐름\n1. 주제, 원본 자료, 브랜드 톤, 사용할 배경 이미지 정책을 확인한다.\n2. 기본은 이미지 검색 결과를 먼저 쓰고, 사용자가 요청할 때만 업로드 또는 이미지 생성을 선택한다.\n3. 9:16 세로 영상 기준으로 중앙 캡션과 상하 black zone/safe area를 보존한다.\n4. TTS, BGM, 이미지 검색/생성, render가 각각 라이브 사용량 이벤트를 남기는 계획을 만든다.\n5. 사용자가 승인한 후에만 커넥터와 렌더 worker로 넘긴다.\n\n## 사용자 표면\n- 사용자는 \"릴스/쇼츠 만들기\", \"이미지 검색으로 시작\", \"업로드한 이미지 쓰기\", \"이미지 생성하기\" 같은 일 단위 선택지를 본다.\n- APM/AWP, contract id, run id, provider 상태 같은 내부 용어는 기본 화면에 노출하지 않는다.\n- 승인 화면에는 영상 길이, 장면 수, 캡션 위치, 배경 이미지 출처, TTS/BGM 선택, 예상 사용량만 보여준다.\n\n## 실패 처리\n- 이미지 검색 결과가 부족하면 업로드 또는 이미지 생성으로 전환할 수 있게 한다.\n- TTS 음성이 없으면 자막-only 초안으로 유지하고 음성 선택을 다시 받는다.\n- BGM 사용권이 불명확하면 기본 무음 또는 사용권 확인된 BGM만 제안한다.\n- render worker가 실패하면 승인된 storyboard와 media packet은 유지하고 다시 렌더할 수 있게 한다.\n",
+  "agents_md_ref": "room821/reels.agent/agent.md",
+  "customizable": false,
+  "default_variant": "",
+  "document_hierarchy": {
+    "awp_operation": "reels-template-video",
+    "contract_version": "awp.reels.template_video.v1",
+    "description": "인스타 릴스·유튜브 쇼츠용 9:16 템플릿 영상 계획",
+    "format": {
+      "canvas": {
+        "aspect_ratio": "9:16",
+        "height": 1920,
+        "width": 1080
+      },
+      "fps": 30,
+      "safe_area": {
+        "bottom_px": 320,
+        "caption_zone": "center",
+        "left_px": 72,
+        "right_px": 72,
+        "top_px": 220
+      }
+    },
+    "kind": "reels",
+    "media_policy": {
+      "alternate_sources": [
+        "upload",
+        "image_generation"
+      ],
+      "default_source": "image_search",
+      "generation_model_default": "gpt-image-2",
+      "generation_quality_default": "medium",
+      "search_results_persist_to": "image_db"
+    },
+    "sections": [
+      {
+        "description": "첫 2초 훅, 끝까지 남길 메시지, 과장 금지선",
+        "id": "1",
+        "title": "훅과 목표"
+      },
+      {
+        "description": "장면별 길이, 배경, black zone, 중앙 캡션, 모션",
+        "id": "2",
+        "title": "장면 storyboard"
+      },
+      {
+        "description": "기본 이미지 검색, 업로드/생성 대체안, image_db 저장 필드",
+        "id": "3",
+        "title": "이미지와 자막"
+      },
+      {
+        "description": "TTS, BGM, mp4 렌더 packet, 라이브 사용량 이벤트",
+        "id": "4",
+        "title": "오디오와 렌더"
+      }
+    ],
+    "title": "릴스/쇼츠 영상 초안",
+    "usage_metering": {
+      "events": [
+        "llm_tokens",
+        "image_search_query",
+        "image_search_result_saved",
+        "image_generation",
+        "tts_seconds",
+        "bgm_asset",
+        "render_seconds"
+      ],
+      "mode": "live"
+    }
+  },
+  "extra_skill_manifests": [],
+  "feature_flag": "reels",
+  "hidden": false,
+  "html_artifact_title": "릴스/쇼츠 영상 초안.html",
+  "html_renderer": "submission",
+  "hub_inputs": [
+    "무엇을 영상으로 만들지 한 줄",
+    "배경 이미지 선택 — 검색 기본, 업로드 또는 생성으로 변경 가능"
+  ],
+  "hub_label": "릴스/쇼츠 만들기",
+  "hub_output": "릴스/쇼츠 초안 — 9:16 장면 계획, 중앙 자막, TTS/BGM, 렌더 전 승인 항목",
+  "hub_review": "렌더 전 이미지 출처, 자막 문구, 음성/BGM, 예상 사용량을 담당자가 확인합니다.",
+  "hub_role": "검색 이미지나 업로드 이미지를 바탕으로 세로 영상 storyboard, 중앙 자막, TTS, BGM, 렌더 계획을 준비합니다. (베타)",
+  "include_required_tables": false,
+  "intake_options": [
+    "이미지 검색",
+    "직접 업로드",
+    "이미지 생성"
+  ],
+  "intake_question": "배경 이미지는 어떻게 시작할까요?",
+  "manifest_overrides": {
+    "agents": [
+      {
+        "id": "room821/reels.agent/agent.md",
+        "path": "apm/reels.agent/agent.md"
+      }
+    ],
+    "awp_operations": [
+      {
+        "approval_required": true,
+        "contract_version": "awp.reels.template_video.v1",
+        "host_route": "/v1/agents/reels/operations/reels-template-video/runs",
+        "id": "reels-template-video",
+        "purpose": "Build an approval-ready vertical Reels/Shorts packet from a source topic, media policy, captions, TTS, BGM, and render constraints.",
+        "render_worker": {
+          "binding": "schift.reels.remotion-renderer.v1",
+          "composition_id": "SchiftReelsTemplate",
+          "engine": "remotion",
+          "ffmpeg_role": "final_mux_and_encoding",
+          "job_route": "/v1/sessions/{session_id}/reels/render-jobs"
+        }
+      }
+    ],
+    "manifest_path": "apm/reels.agent/apm.yml",
+    "name": "room821-reels-agent",
+    "skills": [
+      {
+        "id": "room821/skills/reels-storyboard-writer",
+        "path": "apm/reels.agent/skills/reels-storyboard-writer/SKILL.md"
+      },
+      {
+        "id": "room821/skills/schift-memory",
+        "runtime": "schift-memory"
+      }
+    ],
+    "version": "0.1.2",
+    "visibility": "public"
+  },
+  "markdown_artifact_title": "릴스/쇼츠 영상 초안.md",
+  "markdown_title": "릴스/쇼츠 영상 초안",
+  "mcp_servers": [],
+  "min_auth_level": "",
+  "name": "Room821 Reels Agent",
+  "non_runnable_agent_ids": [],
+  "owner_org_id": "",
+  "package_ref": "room821-reels-agent@0.1.2",
+  "pipeline": "fanout",
+  "primary_skill_id": "room821/skills/reels-storyboard-writer",
+  "qc_enabled": false,
+  "router_default_handler": "",
+  "router_description": "",
+  "router_enabled": false,
+  "router_min_confidence": null,
+  "router_requires_attachment": false,
+  "router_scope": "org_linked",
+  "router_session_scope": "per_thread",
+  "router_shortcut_keywords": [],
+  "router_slash_commands": [],
+  "router_topic_hints": [],
+  "runtime_boundary": {
+    "apm_owns": [
+      "user_intent_routing",
+      "awp_selection",
+      "approval_summary",
+      "ambiguity_resolution",
+      "media_source_choice"
+    ],
+    "awp_owns": [
+      "scene_storyboard_schema",
+      "vertical_safe_area_rules",
+      "caption_timing_policy",
+      "tts_bgm_render_packet",
+      "usage_metering_events",
+      "image_search_result_logging"
+    ],
+    "forbidden_host_policy": [
+      "caption_rewrite_prompt",
+      "scene_order_decision",
+      "safe_area_text_policy",
+      "media_reuse_policy",
+      "billing_metering_policy"
+    ],
+    "host_services_only": [
+      "auth",
+      "source_upload_storage",
+      "image_search_connector",
+      "image_generation_connector",
+      "tts_connector",
+      "bgm_asset_connector",
+      "render_worker",
+      "usage_ledger",
+      "run_persistence"
+    ]
+  },
+  "schema_version": 1,
+  "skill_manifests": [
+    {
+      "description": "릴스/쇼츠용 9:16 템플릿 영상 storyboard, media plan, TTS/BGM/render packet, usage metering 계약을 만든다.",
+      "id": "room821/skills/reels-storyboard-writer",
+      "markdown": "---\nname: reels-storyboard-writer\ndescription: Create approval-ready Korean Reels/Shorts storyboard packets with 9:16 safe areas, captions, media source choices, TTS, BGM, render constraints, and usage metering.\n---\n\n# Reels Storyboard Writer\n\n## Goal\n\n사용자가 준 자료를 릴스/쇼츠용 세로 템플릿 영상으로 바꾼다. 결과는 바로 렌더하지 않고, 승인 가능한 계획으로 낸다.\n\n## Output Contract\n\n반드시 아래 섹션을 만든다.\n\n1. `hook_and_goal`\n   - 첫 2초 훅\n   - 영상에서 끝까지 남길 메시지\n   - 금지할 과장 표현\n2. `scene_storyboard`\n   - 9:16, 1080x1920 기준\n   - 장면별 duration, background_media, black_zone, caption, motion\n   - 상단/하단 플랫폼 UI safe area를 침범하지 않는 caption_y\n3. `media_and_caption_plan`\n   - 기본 media_source는 `image_search`\n   - 대체 선택지는 `upload`, `image_generation`\n   - 검색 결과는 image_db에 저장할 수 있게 query, source_url, thumbnail_url, license_hint를 남긴다\n   - 중앙 캡션 텍스트는 줄바꿈 가능한 길이로 제한한다\n4. `audio_and_render_packet`\n   - TTS voice, speech_rate, BGM mood, bgm_volume\n   - render format: mp4, 1080x1920, 30fps\n   - usage_metering events: llm_tokens, image_search_query, image_generation, tts_seconds, bgm_asset, render_seconds\n\n## Rules\n\n- 카드뉴스 4:5/1:1 레이아웃을 재사용하지 않는다.\n- 텍스트는 중앙 캡션으로 두되 플랫폼 UI safe area에는 넣지 않는다.\n- 이미지 생성은 기본값이 아니다. 검색 또는 업로드로 충분하면 생성하지 않는다.\n- 흑백/검은 오버레이는 영상 가독성 조절 값으로만 쓰고, 배경을 가리는 장식으로 남발하지 않는다.\n- 사용량은 실행 후가 아니라 각 connector 호출 시 라이브로 빠지는 것으로 기록한다.\n",
+      "name": "Reels Storyboard Writer",
+      "output_contract": {
+        "format": "markdown_sections",
+        "required_sections": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      "path": "apm/reels.agent/skills/reels-storyboard-writer/SKILL.md"
+    }
+  ],
+  "skills": [
+    "room821/skills/reels-storyboard-writer",
+    "room821/skills/schift-memory"
+  ],
+  "sub_agent_plan": [
+    {
+      "generation": {
+        "max_tokens": 2400,
+        "temperature": 0.45
+      },
+      "id": "reels-script-agent",
+      "name": "Reels Script Agent",
+      "owns_sections": [
+        "1",
+        "2"
+      ],
+      "role": "훅, 핵심 메시지, 장면 순서를 만든다."
+    },
+    {
+      "generation": {
+        "max_tokens": 2200,
+        "temperature": 0.35
+      },
+      "id": "reels-media-caption-agent",
+      "name": "Reels Media Caption Agent",
+      "owns_sections": [
+        "3"
+      ],
+      "role": "이미지 검색/업로드/생성 선택지와 safe-area 중앙 캡션을 만든다."
+    },
+    {
+      "generation": {
+        "max_tokens": 1800,
+        "temperature": 0.25
+      },
+      "id": "reels-audio-render-agent",
+      "name": "Reels Audio Render Packet Agent",
+      "owns_sections": [
+        "4"
+      ],
+      "role": "TTS, BGM, 렌더 packet과 사용량 이벤트를 정리한다."
+    }
+  ],
+  "tool_snapshot_explicit": false,
+  "tools": [],
+  "variant_keywords": [],
+  "variants": {},
+  "visual_assets_enabled": true
+}

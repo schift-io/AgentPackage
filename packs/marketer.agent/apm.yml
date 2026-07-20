@@ -1,4 +1,5 @@
 name: room821-marketer-agent
+display_name: "Room821 Marketer Agent"
 version: 0.1.4
 description: Marketing agent (베타). Owns blog/cardnews/threads/linkedin/poster outputs, routed by intake. Marketing-methodology QC sub-agent verifies every variant and checks brand-kit consistency.
 extends: ../runtime.yml
@@ -48,3 +49,77 @@ skills:
     path: apm/marketer.agent/skills/marketing-methodology-qc/SKILL.md
   - id: room821/skills/schift-memory
     runtime: schift-memory
+
+# agent_packs.py 에서 이관 — 값은 코드 매니페스트와 바이트 동일(왕복 검증됨).
+default_variant: "blog"
+non_runnable_agent_ids:
+  - "marketing-methodology-qc-agent"
+qc_enabled: true
+sub_agent_plan:
+  - id: "blog-structure-agent"
+    name: "Blog Structure Agent"
+    owns_sections:
+      - "1"
+      - "2"
+    purpose: "도입(후킹) 대안 2개+선택과 공감 문단을 작성한다. 검색 유입 독자의 상황 1문장 승부."
+    required_memory:
+      - "document_hierarchy"
+      - "campaign_brief"
+      - "company_profile"
+    output: "hook_and_empathy_blocks"
+    generation:
+      max_tokens: 2500
+      temperature: 0.6
+      timeout_seconds: 180
+  - id: "blog-body-agent"
+    name: "Blog Body Agent"
+    owns_sections:
+      - "3"
+      - "4"
+      - "5"
+    purpose: "본문 2꼭지와 사례/증거 문단을 작성한다. 소제목당 메시지 1개, 수치엔 근거."
+    required_memory:
+      - "document_hierarchy"
+      - "company_profile"
+      - "source_documents"
+    output: "body_and_proof_blocks"
+    generation:
+      max_tokens: 4096
+      temperature: 0.5
+      timeout_seconds: 240
+  - id: "blog-finish-agent"
+    name: "Blog Finish Agent"
+    owns_sections:
+      - "6"
+    purpose: "정리+단일 CTA 문단과 SEO 메타(title/description/키워드), 발행 채널 추천을 작성한다."
+    required_memory:
+      - "document_hierarchy"
+      - "campaign_brief"
+    output: "closing_cta_and_seo_meta"
+    generation:
+      max_tokens: 2000
+      temperature: 0.4
+      timeout_seconds: 180
+  - id: "marketing-methodology-qc-agent"
+    name: "Marketing Methodology QC Agent"
+    owns_sections:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+    purpose: "marketing-methodology-qc 스킬로 카피 구조(AIDA/PAS)·훅 강도·타깃-채널 적합성·단일 CTA·증거(구체 숫자/후기)·AI 티를 이론 기준으로 판정하고 약점과 수정 방향을 보고한다."
+    required_memory:
+      - "all_section_drafts"
+      - "marketing_methodology_qc_skill"
+    output: "methodology_findings_and_decision"
+    generation:
+      max_tokens: 3000
+      temperature: 0.1
+      timeout_seconds: 240
+artifacts:
+  html_renderer: "blog"
+  markdown_title: "마케팅 산출물 초안"
+  html_artifact_title: "마케팅 산출물 초안.html"
+  markdown_artifact_title: "마케팅 산출물 초안.md"

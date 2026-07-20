@@ -33,14 +33,58 @@ def _canonical_json(obj: Any) -> bytes:
     ).encode("utf-8")
 
 
+# content-hash 는 **팩 내용**의 주소다. 아래 키들은 내용이 아니라 *호스트가 이 팩을
+# 어떻게 등록/전시하는가*(라우터 힌트·허브 UI 라벨·플래그·노출 토글)라서 주소에서
+# 제외한다. 번들에는 그대로 실린다 — 해시 범위에서만 빠진다.
+#
+# ⚠️ **agent-hub 의 `apm_package.HASH_EXCLUDED_KEYS` 와 반드시 같아야 한다.**
+# 한쪽만 바꾸면 같은 팩에 다른 hash 가 나와 두 발행자가 서로 덮어쓰거나 409 를
+# 반복한다. 실제로 이 불일치 때문에 발행 자동화를 켤 수 없었다(2026-07-21).
+HASH_EXCLUDED_KEYS: frozenset[str] = frozenset(
+    {
+        "schema_version",
+        "router_enabled",
+        "router_topic_hints",
+        "router_shortcut_keywords",
+        "router_slash_commands",
+        "router_requires_attachment",
+        "router_scope",
+        "router_session_scope",
+        "router_min_confidence",
+        "router_description",
+        "router_default_handler",
+        "hub_label",
+        "hub_role",
+        "hub_inputs",
+        "hub_output",
+        "hub_review",
+        "intake_question",
+        "intake_options",
+        "feature_flag",
+        "hidden",
+        "owner_org_id",
+    }
+)
+
+
+def hashable_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
+    """content-hash 계산에 쓰는 매니페스트 투영 — 전시/등록 메타를 뺀 것."""
+    return {k: v for k, v in manifest.items() if k not in HASH_EXCLUDED_KEYS}
+
+
 def content_hash(manifest: dict[str, Any], files: dict[str, bytes]) -> str:
     """manifest + 모든 번들 파일을 덮는 결정적 sha256 (hex).
 
     파일은 경로순 정렬해 (path, sha256(bytes))를 누적 → 순서 무관·전체 커버.
+    manifest 는 `hashable_manifest()` 로 투영해 전시/등록 메타를 제외한다.
     """
     h = hashlib.sha256()
     h.update(b"apm-v1\n")
-    h.update(hashlib.sha256(_canonical_json(manifest)).hexdigest().encode())
+    h.update(
+        hashlib.sha256(_canonical_json(hashable_manifest(manifest)))
+        .hexdigest()
+        .encode()
+    )
     h.update(b"\n")
     for path in sorted(files):
         h.update(path.encode("utf-8"))

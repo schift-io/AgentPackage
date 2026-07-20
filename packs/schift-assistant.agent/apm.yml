@@ -1,4 +1,5 @@
 name: schift-assistant-agent
+display_name: "Schift Assistant Agent"
 version: 0.1.3
 # 레지스트리 ref ACL — 미선언이면 서버 기본 private + owner 없음이라
 # 어떤 org 도 목록에서 못 본다(2026-07-20 실측: 라이브 ref 25개 전부 그 상태).
@@ -29,3 +30,15 @@ agents:
 skills:
   - id: room821/skills/schift-memory
     runtime: schift-memory
+
+# agent_packs.py 에서 이관 — 값은 코드 매니페스트와 바이트 동일(왕복 검증됨).
+document_hierarchy:
+  template_id: "schift_assistant_v1"
+  title: "Schift 업무 비서"
+  kind: "chat"
+  knowledge:
+    retrieval_required: false
+    source_strategy: "bucket_rag"
+
+artifacts:
+  markdown_title: "비서 응답"

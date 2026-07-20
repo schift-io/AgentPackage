@@ -1,4 +1,5 @@
 name: room821-blog-agent
+display_name: "Room821 Blog Writer Agent"
 version: 0.1.4
 description: Room821 blog-writing agent package (베타). Promo blog posts for SMBs, written to read human (AI 티 제거). Hook → empathy → body → proof → CTA frame.
 extends: ../runtime.yml
@@ -34,3 +35,76 @@ skills:
     path: apm/blog.agent/skills/blog-writer/HUMANIZE-QC.md
   - id: room821/skills/schift-memory
     runtime: schift-memory
+
+# agent_packs.py 에서 이관 — 값은 코드 매니페스트와 바이트 동일(왕복 검증됨).
+non_runnable_agent_ids:
+  - "blog-humanize-qc-agent"
+qc_enabled: true
+sub_agent_plan:
+  - id: "blog-structure-agent"
+    name: "Blog Structure Agent"
+    owns_sections:
+      - "1"
+      - "2"
+    purpose: "도입(후킹) 대안 2개+선택과 공감 문단을 작성한다. 검색 유입 독자의 상황 1문장 승부."
+    required_memory:
+      - "document_hierarchy"
+      - "campaign_brief"
+      - "company_profile"
+    output: "hook_and_empathy_blocks"
+    generation:
+      max_tokens: 2500
+      temperature: 0.6
+      timeout_seconds: 180
+  - id: "blog-body-agent"
+    name: "Blog Body Agent"
+    owns_sections:
+      - "3"
+      - "4"
+      - "5"
+    purpose: "본문 2꼭지와 사례/증거 문단을 작성한다. 소제목당 메시지 1개, 수치엔 근거."
+    required_memory:
+      - "document_hierarchy"
+      - "company_profile"
+      - "source_documents"
+    output: "body_and_proof_blocks"
+    generation:
+      max_tokens: 4096
+      temperature: 0.5
+      timeout_seconds: 240
+  - id: "blog-finish-agent"
+    name: "Blog Finish Agent"
+    owns_sections:
+      - "6"
+    purpose: "정리+단일 CTA 문단과 SEO 메타(title/description/키워드), 발행 채널 추천을 작성한다."
+    required_memory:
+      - "document_hierarchy"
+      - "campaign_brief"
+    output: "closing_cta_and_seo_meta"
+    generation:
+      max_tokens: 2000
+      temperature: 0.4
+      timeout_seconds: 180
+  - id: "blog-humanize-qc-agent"
+    name: "Blog Humanize QC Agent"
+    owns_sections:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+    purpose: "blog-humanize-qc 스킬로 AI 티 스캔과 사실성(근거 없는 수치)을 판정하고, 위반 구간만 고쳐 통과시킨다."
+    required_memory:
+      - "all_section_drafts"
+      - "submission_writer_skill"
+    output: "humanize_findings_and_revised_draft"
+    generation:
+      max_tokens: 3000
+      temperature: 0.1
+      timeout_seconds: 240
+artifacts:
+  html_renderer: "blog"
+  markdown_title: "홍보 블로그 글 초안"
+  html_artifact_title: "홍보 블로그 글 초안.html"
+  markdown_artifact_title: "홍보 블로그 글 초안.md"

@@ -1,4 +1,5 @@
 name: schift-email-assistant-agent
+display_name: "Schift Email Assistant Agent"
 version: 0.1.3
 description: >-
   Schift email assistant (베타). Classifies an incoming Gmail thread
@@ -40,3 +41,17 @@ knowledge:
   # 버킷은 org가 지정한 knowledge bucket을 런타임에 주입(document_hierarchy.knowledge.
   # bucket_id). 하드코딩하지 않는다. 버킷 미지정 시 rag_search 없이 일반 초안만.
   retrieval_required: false
+
+# agent_packs.py 에서 이관 — 값은 코드 매니페스트와 바이트 동일(왕복 검증됨).
+document_hierarchy:
+  template_id: "email_assistant_v1"
+  title: "메일 어시스턴트"
+  kind: "chat"
+  knowledge:
+    retrieval_required: false
+    source_strategy: "bucket_rag"
+tool_snapshot_explicit: true
+artifacts:
+  markdown_title: "메일 처리 결과"
+  html_artifact_title: "메일 처리 결과.html"
+  markdown_artifact_title: "메일 처리 결과.md"
