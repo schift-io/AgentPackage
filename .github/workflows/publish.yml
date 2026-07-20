@@ -1,0 +1,59 @@
+name: publish
+
+# 팩 변경 자체가 발행을 트리거한다. 발행이 agent-hub 배포에만 붙어 있어서 팩만
+# 고치고 서비스를 배포하지 않으면 레지스트리가 썩었다 — 2026-07-20 실측으로
+# **6일 방치**돼 있었고 그 사이 prod 의 image-gen 은 폐기된 taxonomy 를 가리켰다.
+#
+# ⚠️ **자동 발행은 아직 켜지 않는다.** 지금은 dry-run 만 돈다.
+#
+# 이유: kit(apm.yml 기준)과 agent-hub(코드 AGENT_PACKS 기준)가 **같은 버전에 서로
+# 다른 content-hash** 를 만든다. 실측 zodal@0.1.4 → kit 4e675c7eec05 /
+# agent-hub a38ae237b866. 두 발행자가 붙으면 매번 409 이거나 서로 덮어쓴다.
+#
+# 켜기 전 선행 조건:
+#   1) agent-hub 의 manifest 생성을 apm.yml 파생으로 완전 수렴시켜 두 빌드의 hash 일치
+#      (manifest_overrides 는 수렴 완료, 나머지 매니페스트 필드가 남음)
+#   2) 그 일치를 conformance 테스트로 잠금
+#   3) 발행 주체를 하나로 확정 — 이 워크플로 또는 agent-hub 배포 reconcile 중 하나만
+# 그 뒤에 아래 `if:` 가드를 풀고 secrets 를 채운다.
+
+on:
+  push:
+    branches: [master, main]
+    paths: ["packs/**", "kit/**"]
+  workflow_dispatch:
+    inputs:
+      live:
+        description: "실제 발행(선행 조건 충족 후에만)"
+        type: boolean
+        default: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - run: pip install --quiet pyyaml boto3
+
+      # 발행 전 게이트 — 어휘·필수 필드·테넌트 정체성이 깨진 팩은 올리지 않는다.
+      - name: lint
+        run: python3 kit/apm_kit.py lint
+
+      - name: dry-run (빌드 + hash 산출, 쓰지 않음)
+        env:
+          APM_PUBLISH_DRY_RUN: "1"
+        run: python3 kit/publish.py
+
+      - name: publish (선행 조건 충족 시에만)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.live }}
+        env:
+          SCHIFT_ADMIN_KEY: ${{ secrets.SCHIFT_ADMIN_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: python3 kit/publish.py
