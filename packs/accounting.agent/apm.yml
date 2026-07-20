@@ -1,6 +1,6 @@
 name: room821-accounting-agent
 display_name: "Room821 Accounting Agent"
-version: 0.1.4
+version: 0.1.5
 description: Room821 accounting (경리) agent package (베타). 경리 실무를 8개 variant로 소유 — 증빙→지출결의서, 거래내역→장부·세무·경영 리포트, 부가세 신고 준비, 원천세·급여, 매입→지급(미지급금), 미수금 관리, 근태·연차, 월마감·세무 캘린더. 회계 기준(적격증빙·계정과목·부가세 매입공제)에 맞춰 만들고, 신고·발행·지급·마감 자체는 홈택스/세무·노무 대리인/Bolta 핸드오프로 둔다.
 extends: ../runtime.yml
 

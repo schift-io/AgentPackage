@@ -95,7 +95,7 @@
         "runtime": "agent-hub"
       }
     ],
-    "version": "0.2.2",
+    "version": "0.2.3",
     "visibility": "public"
   },
   "markdown_artifact_title": "사업계획서 제출 검토본.md",
@@ -121,7 +121,7 @@
     "proposal-review-agent"
   ],
   "owner_org_id": "org_room821",
-  "package_ref": "room821-bizplan-agent@0.2.2",
+  "package_ref": "room821-bizplan-agent@0.2.3",
   "pipeline": "fanout",
   "primary_skill_id": "room821/skills/submission-writer",
   "qc_enabled": true,

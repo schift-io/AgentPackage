@@ -1,6 +1,6 @@
 name: room821-bid-response-agent
 display_name: "Room821 Bid-Response Agent"
-version: 0.1.2
+version: 0.1.3
 description: >-
   Room821 조달·입찰 응찰 패키지 에이전트 (베타, 스캐폴딩만 — 미배선/미등록).
   나라장터 공고 RFP ingest → 요구사항·평가표 구조화 → tenant core memory 회사

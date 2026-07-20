@@ -1,6 +1,6 @@
 name: schift-email-assistant-agent
 display_name: "Schift Email Assistant Agent"
-version: 0.1.3
+version: 0.1.4
 description: >-
   Schift email assistant (베타). Classifies an incoming Gmail thread
   (skip / draft_reply / escalate) and, for relevant mail, drafts a

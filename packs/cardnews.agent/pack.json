@@ -264,7 +264,7 @@
         "runtime": "schift-memory"
       }
     ],
-    "version": "0.1.2",
+    "version": "0.1.3",
     "visibility": "public"
   },
   "markdown_artifact_title": "Room821 카드뉴스 검토본.md",
@@ -289,7 +289,7 @@
     "cardnews-qc-agent"
   ],
   "owner_org_id": "",
-  "package_ref": "room821-cardnews-agent@0.1.2",
+  "package_ref": "room821-cardnews-agent@0.1.3",
   "pipeline": "fanout",
   "primary_skill_id": "room821/skills/cardnews-generator",
   "qc_enabled": true,

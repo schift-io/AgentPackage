@@ -1,6 +1,6 @@
 name: gentz-bakery-agent
 display_name: "Gentz Bakery Agent"
-version: 0.1.3
+version: 0.1.4
 description: 겐츠베이커리 고객 챗봇. 매장·메뉴·시즌·후기는 RAG, 알레르기는 식약처 전성분 기반 결정적 조회.
 extends: ../runtime.yml
 

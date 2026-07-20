@@ -142,7 +142,7 @@
         "runtime": "schift-memory"
       }
     ],
-    "version": "0.1.3",
+    "version": "0.1.4",
     "visibility": "private"
   },
   "markdown_artifact_title": "hr_attendance_review.md",
@@ -152,7 +152,7 @@
   "name": "Schift HR/Attendance Agent",
   "non_runnable_agent_ids": [],
   "owner_org_id": "",
-  "package_ref": "schift-hr-attendance-agent@0.1.3",
+  "package_ref": "schift-hr-attendance-agent@0.1.4",
   "pipeline": "fanout",
   "primary_skill_id": "schift/skills/hr-leave-intake",
   "qc_enabled": true,

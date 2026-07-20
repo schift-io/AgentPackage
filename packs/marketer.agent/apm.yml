@@ -1,6 +1,6 @@
 name: room821-marketer-agent
 display_name: "Room821 Marketer Agent"
-version: 0.1.4
+version: 0.1.5
 description: Marketing agent (베타). Owns blog/cardnews/threads/linkedin/poster outputs, routed by intake. Marketing-methodology QC sub-agent verifies every variant and checks brand-kit consistency.
 extends: ../runtime.yml
 

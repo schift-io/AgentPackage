@@ -155,7 +155,7 @@
         "name": "rag_search"
       }
     ],
-    "version": "0.1.2",
+    "version": "0.1.3",
     "visibility": "public"
   },
   "markdown_artifact_title": "응찰 패키지 검토본.md",
@@ -178,7 +178,7 @@
   "name": "Room821 Bid-Response Agent",
   "non_runnable_agent_ids": [],
   "owner_org_id": "org_room821",
-  "package_ref": "room821-bid-response-agent@0.1.2",
+  "package_ref": "room821-bid-response-agent@0.1.3",
   "pipeline": "react",
   "primary_skill_id": "room821/skills/requirement-scoring-map",
   "qc_enabled": false,

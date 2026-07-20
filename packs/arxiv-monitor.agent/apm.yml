@@ -1,6 +1,6 @@
 name: schift-arxiv-monitor-agent
 display_name: "Schift arXiv Monitor Agent"
-version: 0.1.3
+version: 0.1.4
 description: Schift research-interest arXiv monitoring & periodic briefing agent package (베타). Finds new arXiv papers for tracked research interests and builds a cron-deliverable briefing, deduped against what was already reported.
 extends: ../runtime.yml
 

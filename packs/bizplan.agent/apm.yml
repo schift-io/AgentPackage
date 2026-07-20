@@ -1,6 +1,6 @@
 name: room821-bizplan-agent
 display_name: "Business Plan Agent"
-version: 0.2.2
+version: 0.2.3
 description: Room821 business-plan (수행계획서) agent package.
 extends: ../runtime.yml
 

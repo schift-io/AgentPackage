@@ -44,7 +44,7 @@
         "runtime": "schift-memory"
       }
     ],
-    "version": "0.1.3",
+    "version": "0.1.4",
     "visibility": "private"
   },
   "markdown_artifact_title": "",
@@ -54,7 +54,7 @@
   "name": "Schift Assistant Agent",
   "non_runnable_agent_ids": [],
   "owner_org_id": "",
-  "package_ref": "schift-assistant-agent@0.1.3",
+  "package_ref": "schift-assistant-agent@0.1.4",
   "pipeline": "react",
   "primary_skill_id": "",
   "qc_enabled": false,

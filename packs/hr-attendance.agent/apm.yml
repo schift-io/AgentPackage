@@ -1,6 +1,6 @@
 name: schift-hr-attendance-agent
 display_name: "Schift HR/Attendance Agent"
-version: 0.1.3
+version: 0.1.4
 description: >
   Schift HR/근태 APM. 직원의 휴가·근태 신청을 규제 Agent(법률·회칙)와
   인사 Agent(조직 운영)가 병렬 검토하여 승인/반려/보완 판정을 내리고,

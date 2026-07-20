@@ -1,6 +1,6 @@
 name: schift-assistant-agent
 display_name: "Schift Assistant Agent"
-version: 0.1.3
+version: 0.1.4
 # 레지스트리 ref ACL — 미선언이면 서버 기본 private + owner 없음이라
 # 어떤 org 도 목록에서 못 본다(2026-07-20 실측: 라이브 ref 25개 전부 그 상태).
 # visibility=발견 권한. corporate 는 '인증된 아무 org'를 뜻하므로

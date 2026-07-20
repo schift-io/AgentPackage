@@ -1,6 +1,6 @@
 name: schift-cheongchangsa-agent
 display_name: "Schift Cheongchangsa Evidence Review Agent"
-version: 0.2.4
+version: 0.2.5
 description: Schift Cheongchangsa Discord evidence review and execution packet agent package.
 extends: ../runtime.yml
 

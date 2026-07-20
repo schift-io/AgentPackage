@@ -109,7 +109,7 @@
         "runtime": "schift-memory"
       }
     ],
-    "version": "0.1.2",
+    "version": "0.1.3",
     "visibility": "public"
   },
   "markdown_artifact_title": "장학금 다이제스트.md",
@@ -121,7 +121,7 @@
     "scholarship-review-agent"
   ],
   "owner_org_id": "",
-  "package_ref": "schift-scholarship-agent@0.1.2",
+  "package_ref": "schift-scholarship-agent@0.1.3",
   "pipeline": "fanout",
   "primary_skill_id": "schift/skills/scholarship-search",
   "qc_enabled": true,

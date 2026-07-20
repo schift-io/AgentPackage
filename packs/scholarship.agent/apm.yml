@@ -1,6 +1,6 @@
 name: schift-scholarship-agent
 display_name: "Schift Scholarship Search Agent"
-version: 0.1.2
+version: 0.1.3
 description: Schift scholarship search & periodic digest agent package (베타). Finds Korean scholarships from official sources and builds a cron-deliverable digest filtered by student profile.
 extends: ../runtime.yml
 

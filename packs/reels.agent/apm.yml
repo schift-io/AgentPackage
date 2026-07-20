@@ -1,6 +1,6 @@
 name: room821-reels-agent
 display_name: "Room821 Reels Agent"
-version: 0.1.2
+version: 0.1.3
 description: Reels/Shorts APM that prepares template-based vertical videos with approval checkpoints.
 extends: ../runtime.yml
 

@@ -98,7 +98,7 @@
         "runtime": "schift-memory"
       }
     ],
-    "version": "0.1.4",
+    "version": "0.1.5",
     "visibility": "public"
   },
   "markdown_artifact_title": "홍보 블로그 글 초안.md",
@@ -123,7 +123,7 @@
     "blog-humanize-qc-agent"
   ],
   "owner_org_id": "",
-  "package_ref": "room821-blog-agent@0.1.4",
+  "package_ref": "room821-blog-agent@0.1.5",
   "pipeline": "fanout",
   "primary_skill_id": "room821/skills/blog-writer",
   "qc_enabled": true,

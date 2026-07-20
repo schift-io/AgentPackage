@@ -150,7 +150,7 @@
         "name": "generate_image"
       }
     ],
-    "version": "0.2.2",
+    "version": "0.2.3",
     "visibility": "public"
   },
   "markdown_artifact_title": "이미지 생성 검토본.md",
@@ -160,7 +160,7 @@
   "name": "Room821 Image Generation Agent",
   "non_runnable_agent_ids": [],
   "owner_org_id": "org_room821",
-  "package_ref": "room821-image-gen-agent@0.2.2",
+  "package_ref": "room821-image-gen-agent@0.2.3",
   "pipeline": "react",
   "primary_skill_id": "room821/skills/image-prompt-compiler",
   "qc_enabled": false,

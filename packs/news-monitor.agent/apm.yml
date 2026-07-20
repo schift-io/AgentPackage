@@ -1,6 +1,6 @@
 name: schift-news-monitor-agent
 display_name: "Schift News Monitor Agent"
-version: 0.1.3
+version: 0.1.4
 description: Schift keyword news monitoring & periodic briefing agent package (베타). Finds Korean+global news for tracked keywords from official/press sources and builds a cron-deliverable daily briefing, deduped against what was already reported.
 extends: ../runtime.yml
 

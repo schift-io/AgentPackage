@@ -174,7 +174,7 @@
         "runtime": "schift-memory"
       }
     ],
-    "version": "0.1.4",
+    "version": "0.1.5",
     "visibility": "public"
   },
   "markdown_artifact_title": "경리 증빙·지출 검토본.md",
@@ -193,7 +193,7 @@
     "withholding-review-agent"
   ],
   "owner_org_id": "org_room821",
-  "package_ref": "room821-accounting-agent@0.1.4",
+  "package_ref": "room821-accounting-agent@0.1.5",
   "pipeline": "fanout",
   "primary_skill_id": "room821/skills/expense-evidence",
   "qc_enabled": true,

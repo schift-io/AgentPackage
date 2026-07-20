@@ -179,7 +179,7 @@
         "runtime": "schift-memory"
       }
     ],
-    "version": "0.2.4",
+    "version": "0.2.5",
     "visibility": "private"
   },
   "markdown_artifact_title": "청창사 증빙 검토본.md",
@@ -191,7 +191,7 @@
     "cheongchangsa-review-agent"
   ],
   "owner_org_id": "org_room821",
-  "package_ref": "schift-cheongchangsa-agent@0.2.4",
+  "package_ref": "schift-cheongchangsa-agent@0.2.5",
   "pipeline": "fanout",
   "primary_skill_id": "schift/skills/cheongchangsa-document-prep",
   "qc_enabled": true,

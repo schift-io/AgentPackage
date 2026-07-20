@@ -1,6 +1,6 @@
 name: room821-blog-agent
 display_name: "Room821 Blog Writer Agent"
-version: 0.1.4
+version: 0.1.5
 description: Room821 blog-writing agent package (베타). Promo blog posts for SMBs, written to read human (AI 티 제거). Hook → empathy → body → proof → CTA frame.
 extends: ../runtime.yml
 
