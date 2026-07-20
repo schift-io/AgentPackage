@@ -1,0 +1,120 @@
+name: room821-higgsfield-agent
+version: 0.1.1
+description: >-
+  연출 전용 APM. 오픈 연출 버킷(higgsfield-directing)에서 샷 문법·광원·카메라워크·
+  무브먼트·앵커 템플릿을 끌어와, txt2img로 스토리보드 grid 초안을 만들고 승인된
+  패널만 imgs2vid로 짧게 클립화해 이어 붙인다. [txt2img] storyboard+movement [imgs2vid].
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=True, sub_agent_plan=[])과 바이트 동일.
+pipeline: react
+# access_scope 미선언 — owner_org_id="" → derive_access_scope=""와 parity.
+
+knowledge:
+  bucket_id: cf881f88e1cd491e944fa199f0eaf7c1
+  bucket_name: higgsfield-directing
+  bucket_role: directing_reference
+  retrieval_required: true
+
+agents:
+  - id: room821/higgsfield.agent/agent.md
+    path: apm/higgsfield.agent/agent.md
+
+skills:
+  - id: room821/skills/higgsfield-director-brief
+    path: apm/higgsfield.agent/skills/director-brief/SKILL.md
+  - id: room821/skills/higgsfield-shot-list-designer
+    path: apm/higgsfield.agent/skills/shot-list-designer/SKILL.md
+    references:
+      - apm/higgsfield.agent/skills/shot-list-designer/references/shot-grammar-extended.md
+      - apm/higgsfield.agent/skills/shot-list-designer/references/lighting-camera-taxonomy.md
+  - id: room821/skills/higgsfield-movement-composer
+    path: apm/higgsfield.agent/skills/movement-composer/SKILL.md
+    references:
+      - apm/higgsfield.agent/skills/movement-composer/references/transition-library.md
+  - id: room821/skills/higgsfield-prompt-composer
+    path: apm/higgsfield.agent/skills/prompt-composer/SKILL.md
+    references:
+      - apm/higgsfield.agent/skills/prompt-composer/references/mega-anchor-variants.md
+  - id: room821/skills/higgsfield-clip-stitch-planner
+    path: apm/higgsfield.agent/skills/clip-stitch-planner/SKILL.md
+    references:
+      - apm/higgsfield.agent/skills/clip-stitch-planner/references/imgs2vid-constraints.md
+  - id: room821/skills/higgsfield-director-qc
+    path: apm/higgsfield.agent/skills/director-qc/SKILL.md
+    references:
+      - apm/higgsfield.agent/skills/director-qc/references/consistency-scorecard.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+awp_operations:
+  - id: higgsfield-directed-video
+    contract_version: awp.higgsfield.directed_video.v1
+    purpose: >-
+      연출 브리프 + 샷 리스트 + 무브먼트로 승인 가능한 스토리보드·클립 패킷을 만든다.
+      초안은 grid 1장(저비용)으로 뽑고, 승인된 패널만 imgs2vid로 클립화해 이어 붙인다.
+    approval_required: true
+    host_route: /v1/agents/higgsfield/operations/higgsfield-directed-video/runs
+    image_model:                       # txt2img grid draft (Gemini 유지 — 가장 싼 Gemini 이미지)
+      default: gemini-3.1-flash-lite-image   # 저가·고속 grid 1장 (~$0.034/1K)
+      quality_upgrade: nano-banana
+      cheapest_alt: flux-2-klein-9b
+      adapter_env: HIGGSFIELD_TXT2IMG_ADAPTER_URL
+      draft_mode: grid                 # 8~12 패널 1 forward pass
+      per_image_token_estimate: 1120
+    mcp:
+      server: higgsfield
+      transport: streamable_http
+      url: https://mcp.higgsfield.ai/mcp
+      discover_tools: true
+      auth:
+        type: oauth_bearer
+        resource_metadata: https://mcp.higgsfield.ai/.well-known/oauth-protected-resource/mcp
+        token_env: HIGGSFIELD_MCP_BEARER_TOKEN
+    video_model:
+      default: seedance_2_0
+      cost_alt: kling3_0
+      cost_alt2: minimax_hailuo
+      quality_upgrade: veo3_1
+      per_clip_sec_default: 5
+      max_clip_sec: 6
+    stitch_worker:
+      binding: schift.higgsfield.ffmpeg-stitch.v1
+      engine: ffmpeg
+      job_route: /v1/sessions/{session_id}/higgsfield/stitch-jobs
+      ffmpeg_role: concat_and_final_encode
+
+runtime_boundary:
+  apm_owns:
+    - user_intent_routing
+    - awp_selection
+    - approval_summary
+    - ambiguity_resolution
+    - shot_axis_choice
+    - panel_selection_choice
+  awp_owns:
+    - director_brief_schema
+    - shot_list_schema
+    - anchor_variant_policy
+    - movement_transition_policy
+    - grid_draft_composition
+    - imgs2vid_clip_plan
+    - stitch_order_policy
+    - consistency_score_gate
+    - usage_metering_events
+  host_services_only:
+    - auth
+    - directing_bucket_rag
+    - txt2img_connector          # Gemini grid (image_service) — 가장 싼 Gemini 이미지
+    - higgsfield_mcp             # imgs2vid + character consistency + motion/style presets (Seedance 기본, 30+ 모델)
+    - vision_scorer
+    - stitch_worker
+    - usage_ledger
+    - run_persistence
+  forbidden_host_policy:
+    - brief_field_rewrite_prompt
+    - shot_order_decision
+    - anchor_text_policy
+    - shot_grammar_policy
+    - movement_policy
+    - billing_metering_policy

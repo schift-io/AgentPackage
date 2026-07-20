@@ -1,0 +1,59 @@
+name: schift-cheongchangsa-agent
+version: 0.2.1
+description: Schift Cheongchangsa Discord evidence review and execution packet agent package.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=False)과 바이트 동일.
+pipeline: fanout
+
+agents:
+  - id: schift/cheongchangsa.agent/agent.md
+    path: apm/cheongchangsa.agent/agent.md
+
+skills:
+  - id: schift/skills/cheongchangsa-document-prep
+    path: apm/cheongchangsa.agent/skills/document-prep/SKILL.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+discord:
+  install_mode: oauth2_application_install
+  bot_token_env: SCHIFT_DISCORD_CHEONGCHANGSA_BOT_TOKEN
+  webhook_env: SCHIFT_DISCORD_CHEONGCHANGSA_WEBHOOK_URL
+  channel_id_env: SCHIFT_DISCORD_CHEONGCHANGSA_CHANNEL_ID
+  commands:
+    - name: ai-usage
+      ko_name: ai사용비-집행
+      awp_operation: cheongchangsa.ai_usage_execution
+    - name: payroll
+      ko_name: 인건비-집행
+      awp_operation: cheongchangsa.payroll_execution
+    - name: ads
+      ko_name: 광고비-집행
+      awp_operation: cheongchangsa.ads_execution
+    - name: evidence-review
+      ko_name: 증빙검토
+      awp_operation: cheongchangsa.evidence_review
+    - name: submission-bundle
+      ko_name: 제출패키지생성
+      awp_operation: cheongchangsa.submission_bundle
+
+knowledge:
+  bucket_id: 43c25d14931e42828c3c6cbba469b550
+  bucket_name: chungchangsa-2026-execution-manual
+  bucket_role: canonical_manual
+  retrieval_required: true
+  # pre-run 매뉴얼 grounding은 command별 관련 쿼리만 핸들러가 골라서 한다
+  # (cheongchangsa_assets.CHEONGCHANGSA_RETRIEVAL_QUERIES). flat 목록을 두면 매 런
+  # 전부(~7,700자) 끌어와 무관 근거가 섞이므로 두지 않는다.
+  source:
+    kind: pdf
+    title: 2026년 창업성공패키지(청년창업사관학교) 사업비 집행 매뉴얼 0601개정
+    local_path: /Users/jskang/Downloads/★2026년 창업성공패키지(청년창업사관학교) 사업비 집행 매뉴얼_0601개정.pdf
+    ingest_metadata:
+      bucket_id: 43c25d14931e42828c3c6cbba469b550
+      bucket_name: chungchangsa-2026-execution-manual
+      program: 청년창업사관학교
+      year: "2026"
+      document_type: business_expense_execution_manual
+      source_scope: chungchangsa_evidence_review

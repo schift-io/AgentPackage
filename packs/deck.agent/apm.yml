@@ -1,0 +1,33 @@
+name: room821-deck-agent
+version: 0.1.0
+description: Room821 presentation-deck (IR 장표) agent package. Schift IR 17-slide frame.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=False)과 바이트 동일.
+pipeline: fanout
+access_scope: org  # owner_org_id=org_room821
+
+# memory 계약 — deck-qc 스킬의 "근거 제시" QC 게이트가 실제로 회사 메모리를
+# 조회하려면 memory.* 툴이 fan-out in-loop 근거수집에 바인딩돼야 한다
+# (bid-response와 동일 패턴, 2026-07-11 pack-wiring-audit 갭 ④.
+# agent_packs.py DECK_PACK과 수동 미러).
+memory:
+  requires:
+    tools: [memory.search, memory.recall, memory.cite]
+    scopes: [core, agent]
+
+agents:
+  - id: room821/deck.agent/agent.md
+    path: apm/deck.agent/agent.md
+
+skills:
+  - id: room821/skills/deck-designer
+    path: apm/deck.agent/skills/deck-designer/SKILL.md
+    references:
+      - apm/deck.agent/skills/deck-designer/references/color-palettes.md
+      - apm/deck.agent/skills/deck-designer/references/exemplar-sections.json
+      - apm/deck.agent/skills/deck-designer/references/chart-archetype-catalog.md
+  - id: room821/skills/deck-qc
+    path: apm/deck.agent/skills/deck-qc/SKILL.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory

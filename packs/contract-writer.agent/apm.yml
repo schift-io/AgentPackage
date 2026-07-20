@@ -1,0 +1,92 @@
+name: room821-contract-writer-agent
+version: 0.1.0
+description: >-
+  계약서/MOU 작성 유틸 에이전트(베타, 스캐폴딩만 — 미배선/미등록). bid-response.agent
+  (RFP→제안서→별지서식→HWPX)의 문서생성 패턴을 계약 문서 도메인에 미러한다.
+  표준 계약 템플릿(MOU/NDA/용역계약/공동사업협약)의 조항 빈칸을 당사자 정보로
+  채워 초안 markdown을 만들고, 결정적 검토 게이트를 통과하면 HWPX로 패키징한다.
+  **법률 자문이 아니다** — 조항의 유불리·법적 효력 판단은 이 팩의 범위 밖.
+extends: ../runtime.yml
+# 이 팩은 등록/배포 전 스캐폴딩 단계 — SCAFFOLD 상태의 GO 없이 활성화하지 않는다.
+pipeline: react
+access_scope: org  # owner_org_id=org_room821
+
+agents:
+  - id: room821/contract-writer.agent/agent.md
+    path: apm/contract-writer.agent/agent.md
+
+skills:
+  - id: room821/skills/contract-intake
+    path: apm/contract-writer.agent/skills/contract-intake/SKILL.md
+    references:
+      - apm/contract-writer.agent/skills/contract-intake/references/contract-types.md
+  - id: room821/skills/contract-drafting
+    path: apm/contract-writer.agent/skills/contract-drafting/SKILL.md
+    references:
+      - apm/contract-writer.agent/skills/contract-drafting/references/clause-structure.md
+  - id: room821/skills/review-gate
+    path: apm/contract-writer.agent/skills/review-gate/SKILL.md
+    # 결정적 검사. 순수 함수 정본: src/agent_hub/contract_writer_review_gate.py
+    # 단위 테스트: services/agent-hub/tests/test_contract_writer_review_gate.py
+  - id: room821/skills/hwpx-packaging
+    path: apm/contract-writer.agent/skills/hwpx-packaging/SKILL.md
+  - id: room821/skills/run-report
+    path: apm/contract-writer.agent/skills/run-report/SKILL.md
+
+# text_model — 이 팩 P1 MVP는 조항을 표준 템플릿 치환으로만 생성한다(LLM 자유
+# 서술 없음). 향후 서술형 특약(special_terms) 보강에 LLM을 붙일 때를 대비해
+# 파라미터 자리만 선언해둔다 — 하드코딩 금지, 카탈로그 등록 모델만 선택 가능.
+awp_operations:
+  - id: contract-writer-draft
+    contract_version: awp.contract_writer.draft.v1
+    purpose: >-
+      구조화된 계약 intake(당사자/목적/범위/기간/대가/특약)로 표준 조항 초안
+      markdown을 생성하고, 결정적 검토 게이트 통과 시 HWPX로 패키징한다.
+    approval_required: true   # 계약 문서 — 제출/서명 전 사람 검수 필수.
+    host_route: /v1/agents/contract-writer/operations/contract-writer-draft/runs
+    text_model:
+      default: openai/gpt-5.4-mini
+      cheapest_alt: google/gemini-3-flash
+      quality_upgrade: google/gemini-3.5-flash
+      model_env: CONTRACT_WRITER_TEXT_MODEL
+      provider_catalog_ref: schift-api/server/llm/router.py#PROVIDER_MODELS
+      pricing_ref: schift-api/server/tokenizer.py
+      # P1 MVP는 결정적 템플릿 렌더링만 수행하므로 모델 호출 0회가 정상이다.
+      per_run_llm_call_estimate: 0
+
+runtime_boundary:
+  apm_owns:
+    - user_intent_routing
+    - contract_type_selection
+    - approval_summary
+    - ambiguity_resolution
+  awp_owns:
+    - clause_template_schema
+    - intake_field_schema
+    - review_gate_rules
+    - legal_advice_guard   # 자문성 문구 차단 — 이 팩의 절대 경계
+    - usage_metering_events
+  host_services_only:
+    - auth
+    - hwpx_render_connector      # document-helper (/hwpx/generate) — bid-response와
+                                 # 동일 클라이언트(DocumentHelperClient) 재사용.
+                                 # AWP 배선/등록·배포는 별도 GO.
+    - text_generation_connector  # P1 MVP는 미사용(호출 0회) — 향후 특약 보강용.
+    - usage_ledger
+    - run_persistence
+  forbidden_host_policy:
+    - clause_legal_effect_judgment   # "이 조항이 유리합니다" 류 판단 금지
+    - clause_field_fabrication       # intake에 없는 실값 창조 금지
+    - billing_metering_policy
+
+# 스캐폴딩 상태 표시 — 등록/배포/활성화 전 필수 확인 항목.
+scaffold_status:
+  registered: true   # agent_packs.py CONTRACT_WRITER_PACK 등록 완료(2026-07-13).
+  deployed: false   # 코드 배선 완료 — prod 배포는 별도 GO(./deploy.sh api, 건별 승인).
+  hwpx_generate_route: true  # /v1/document-helper/hwpx/generate 실재(bid-response와 공유).
+  operation_route_wired: true  # host_route(FastAPI 라우트) 등록 완료 —
+                                # meeting_processing_operations.py `_run_contract_writer_draft`
+                                # (+ `contract_writer_operation.run_contract_writer_operation`
+                                # 오케스트레이터 디스패치, HWPX 완료 시 channel notice 핸드오프).
+                                # 활성화는 배포 후 org DB flag flip만 남음
+                                # (PUT /v1/admin/orgs/{org}/feature-flags/contract_writer).

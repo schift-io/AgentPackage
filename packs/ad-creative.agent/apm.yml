@@ -1,0 +1,86 @@
+name: room821-ad-creative-agent
+version: 0.1.0
+description: >-
+  AI 광고 크리에이티브 APM. Ogilvy DO BRIEF(구조화 intake) → 세그먼트 팬아웃 →
+  캐릭터 시트(JSON+레퍼런스 앵커) → 스토리보드(grid 초안 → 승인 컷 업스케일).
+  브랜드 버킷 RAG grounding, 모델-무관 이미지 어댑터(디폴트 저가·고속).
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=True, sub_agent_plan=[])과 바이트 동일.
+pipeline: react
+access_scope: org  # owner_org_id=org_room821
+
+agents:
+  - id: room821/ad-creative.agent/agent.md
+    path: apm/ad-creative.agent/agent.md
+
+skills:
+  - id: room821/skills/ogilvy-brief
+    path: apm/ad-creative.agent/skills/ogilvy-brief/SKILL.md
+    references:
+      - apm/ad-creative.agent/skills/ogilvy-brief/references/ogilvy-brief-schema.json
+      - apm/ad-creative.agent/skills/ogilvy-brief/references/six-element-ontology.md
+  - id: room821/skills/segment-fanout
+    path: apm/ad-creative.agent/skills/segment-fanout/SKILL.md
+    references:
+      - apm/ad-creative.agent/skills/segment-fanout/references/segment-axes.md
+  - id: room821/skills/character-sheet
+    path: apm/ad-creative.agent/skills/character-sheet/SKILL.md
+  - id: room821/skills/storyboard-designer
+    path: apm/ad-creative.agent/skills/storyboard-designer/SKILL.md
+    references:
+      - apm/ad-creative.agent/skills/storyboard-designer/references/shot-grammar.md
+      - apm/ad-creative.agent/skills/storyboard-designer/references/anti-slop-prompt-rules.md
+  - id: room821/skills/ad-qc
+    path: apm/ad-creative.agent/skills/ad-qc/SKILL.md
+    references:
+      - apm/ad-creative.agent/skills/ad-qc/references/scorecard-17.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+awp_operations:
+  - id: ad-storyboard
+    contract_version: awp.ad_creative.storyboard.v1
+    purpose: >-
+      Ogilvy 브리프 + 선택된 세그먼트로 승인 가능한 광고 스토리보드 패킷을 만든다.
+      비용/일관성 최적화를 위해 초안은 grid 1장으로 뽑고, 승인된 컷만 개별 고해상 재생성한다.
+    approval_required: true
+    host_route: /v1/agents/ad-creative/operations/ad-storyboard/runs
+    image_model:
+      # 디폴트는 저가·고속. 품질 컷만 업그레이드. 실제 엔드포인트는 어댑터 env로 주입.
+      default: grok-imagine          # ~$0.020/1k img
+      quality_upgrade: nano-banana   # 승인 컷 per-panel 업스케일
+      cheapest_alt: flux-2-klein-9b  # ~$0.015/1k img
+      adapter_env: AD_CREATIVE_IMAGE_ADAPTER_URL
+      draft_mode: grid               # 8~12 패널을 1회 생성(단일 forward pass=최대 일관성+최저 비용)
+      per_image_token_estimate: 1120
+
+runtime_boundary:
+  apm_owns:
+    - user_intent_routing
+    - awp_selection
+    - approval_summary
+    - ambiguity_resolution
+    - segment_axis_choice
+  awp_owns:
+    - ogilvy_brief_schema
+    - segment_persona_derivation
+    - character_sheet_anchors
+    - storyboard_scene_schema
+    - grid_draft_composition
+    - consistency_score_gate
+    - usage_metering_events
+  host_services_only:
+    - auth
+    - brand_bucket_rag
+    - image_generation_connector
+    - image_upscale_connector
+    - vision_scorer
+    - usage_ledger
+    - run_persistence
+  forbidden_host_policy:
+    - brief_field_rewrite_prompt
+    - segment_definition_decision
+    - anchor_text_policy
+    - shot_grammar_policy
+    - billing_metering_policy

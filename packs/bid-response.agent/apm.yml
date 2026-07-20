@@ -1,0 +1,127 @@
+name: room821-bid-response-agent
+version: 0.1.0
+description: >-
+  Room821 조달·입찰 응찰 패키지 에이전트 (베타, 스캐폴딩만 — 미배선/미등록).
+  나라장터 공고 RFP ingest → 요구사항·평가표 구조화 → tenant core memory 회사
+  컨텍스트 조회(디폴트 메모리, 지식 버킷 아님) → 제안서 본문 섹션 생성 → 별지서식
+  채움 → markdown→HWPX 패키징 → 런 리포트(처리시간·토큰·cr 비용·placeholder 잔여).
+  노트북 지그 실측("RFP→응찰 패키지 HWPX 13개, 12분", `PROOF.md`) 포팅.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 관례를 따름(선언적 pipeline).
+# 이 팩은 등록/배포 전 스캐폴딩 단계 — SCAFFOLD.md의 GO 없이 활성화하지 않는다.
+pipeline: react
+access_scope: org  # owner_org_id=org_room821
+
+agents:
+  - id: room821/bid-response.agent/agent.md
+    path: apm/bid-response.agent/agent.md
+
+skills:
+  - id: room821/skills/rfp-intake
+    path: apm/bid-response.agent/skills/rfp-intake/SKILL.md
+    references:
+      - apm/bid-response.agent/skills/rfp-intake/references/rfp-attachment-categories.md
+  - id: room821/skills/requirement-scoring-map
+    path: apm/bid-response.agent/skills/requirement-scoring-map/SKILL.md
+    references:
+      - apm/bid-response.agent/skills/requirement-scoring-map/references/scoring-map-schema.md
+  - id: room821/skills/company-memory-grounding
+    path: apm/bid-response.agent/skills/company-memory-grounding/SKILL.md
+    references:
+      - apm/bid-response.agent/skills/company-memory-grounding/references/memory-pack-usage-map.md
+  - id: room821/skills/proposal-drafting
+    path: apm/bid-response.agent/skills/proposal-drafting/SKILL.md
+  - id: room821/skills/faithfulness-check
+    path: apm/bid-response.agent/skills/faithfulness-check/SKILL.md
+    runtime: faithfulness-check   # 결정적 검사. 제네릭 tool-runtime(post-react-run)이 디스패치.
+    # 순수 함수 정본: src/agent_hub/faithfulness_gate.py (스크립트는 그 정본을
+    # re-export하는 shim: apm/bid-response.agent/scripts/faithfulness_check.py)
+    # 단위 테스트: services/agent-hub/tests/test_faithfulness_check.py
+  - id: room821/skills/form-filling
+    path: apm/bid-response.agent/skills/form-filling/SKILL.md
+    references:
+      - apm/bid-response.agent/skills/form-filling/references/common-annex-forms.md
+  - id: room821/skills/hwpx-packaging
+    path: apm/bid-response.agent/skills/hwpx-packaging/SKILL.md
+  - id: room821/skills/run-report
+    path: apm/bid-response.agent/skills/run-report/SKILL.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory   # tenant core memory 조회(3-tier). 지식 버킷 아님.
+
+# memory 계약 — 이 선언이 있어야 memory.* 툴이 ReAct 루프에 바인딩된다
+# (memory_tool_facade.has_required_memory_tools). 없으면 company-memory-grounding
+# 스킬이 참조할 회사 메모리에 런타임이 도달할 물리 경로가 없다
+# (2026-07-11 MEMORY_VERIFY 항목 6 FAIL 보정 — agent_packs.py BID_RESPONSE_PACK과 수동 미러).
+memory:
+  requires:
+    tools: [memory.search, memory.recall, memory.cite]
+    scopes: [core, agent]
+
+# text_model — ad-creative.agent의 image_model 파라미터 패턴을 텍스트 생성에
+# 그대로 적용. 하드코딩 금지 — 카탈로그(server/llm/router.py PROVIDER_MODELS)
+# 등록 모델만 선택 가능, env로 교체.
+awp_operations:
+  - id: bid-response-proposal
+    contract_version: awp.bid_response.proposal.v1
+    purpose: >-
+      구조화된 RFP 평가표 + tenant core memory 회사 컨텍스트로 제안서 본문 섹션과
+      별지서식 값을 생성한다. HWPX 패키징은 document-helper가 별도로 처리한다.
+    approval_required: true   # 응찰 패키지 — 제출 전 사람 검수 필수(사고 이력 없음, 원칙상 게이트)
+    # 라우트 컨벤션(reels/ad-creative와 동일): {operation_id} 경로 세그먼트는
+    # 이 항목의 `id`(bid-response-proposal) 그대로 — meeting_processing_operations.py
+    # 제네릭 라우터가 path operation_id == payload.operation_id를 검증한다.
+    host_route: /v1/agents/bid-response/operations/bid-response-proposal/runs
+    text_model:
+      # cr 과금 확인된 디폴트(tokenizer.py 실측 가격). 카탈로그 내 교체 가능,
+      # 하드코딩된 벤더 락인 없음.
+      default: openai/gpt-5.4-mini        # $0.75/M in, $4.50/M out (tokenizer.py 실측)
+      cheapest_alt: google/gemini-3-flash # $0.50/M in, $3.00/M out
+      quality_upgrade: google/gemini-3.5-flash  # $1.50/M in, $9.00/M out
+      model_env: BID_RESPONSE_TEXT_MODEL
+      provider_catalog_ref: schift-api/server/llm/router.py#PROVIDER_MODELS
+      pricing_ref: schift-api/server/tokenizer.py
+      per_run_section_count_estimate: 12   # 본문 1 + 별지서식 11 (PROOF.md 실측 기준)
+
+runtime_boundary:
+  apm_owns:
+    - user_intent_routing
+    - awp_selection
+    - approval_summary
+    - ambiguity_resolution
+    - notice_selection   # bid_ntce_no 선택
+  awp_owns:
+    - rfp_attachment_resolution
+    - scoring_map_schema
+    - proposal_section_schema
+    - annex_form_field_schema
+    - hallucination_guard_against_memory_pack
+    - usage_metering_events
+  host_services_only:
+    - auth
+    - session_bucket_rag
+    - tenant_core_memory_query
+    - hwpx_render_connector      # document-helper (/hwpx/generate, /hwpx/package 라우트 실재 —
+                                 # awp 배선은 schift-api/awp_packs/first_party/bid-response/
+                                 # package-hwpx.awp.yaml, status: pending_host_integration
+                                 # — .apm 레지스트리 등록·배포만 남음)
+    - text_generation_connector
+    - usage_ledger
+    - run_persistence
+  forbidden_host_policy:
+    - proposal_field_rewrite_prompt
+    - scoring_map_definition_decision
+    - memory_pack_field_fabrication
+    - billing_metering_policy
+
+# 스캐폴딩 상태 표시 — 등록/배포/활성화 전 필수 확인 항목. 상세는 SCAFFOLD.md.
+scaffold_status:
+  registered: true    # agent_packs.py에 BID_RESPONSE_PACK 등록 완료(로컬 실행 가능). feature_flag=bid_response(기본 OFF)
+  deployed: false
+  memory_seed_wired: false   # apm_memory_seed.install_pack_seeds() 호출부 없음(배선 밖)
+  memory_pack_adapter: false # company-memory-pack md/json -> .cclg 빌더 없음
+  hwpx_generate_route: true  # /v1/document-helper/hwpx/generate(신규 생성) + /hwpx/package(병합) 실재.
+                             # awp_packs/first_party/bid-response/package-hwpx.awp.yaml direct 호출로
+                             # 배선(status: pending_host_integration — .apm 등록·배포만 남음)
+  faithfulness_gate_wired: true  # 결정적 검사(apply_gate)가 post-react-run으로 배선됨
+                                 # (bid_response_faithfulness.py). LLM 판정(judge_fn)은 여전히
+                                 # 미배선 — text_generation_connector 블로커, fail-closed로 동작.

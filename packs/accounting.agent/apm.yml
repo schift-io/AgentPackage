@@ -1,0 +1,50 @@
+name: room821-accounting-agent
+version: 0.1.0
+description: Room821 accounting (경리) agent package (베타). 경리 실무를 8개 variant로 소유 — 증빙→지출결의서, 거래내역→장부·세무·경영 리포트, 부가세 신고 준비, 원천세·급여, 매입→지급(미지급금), 미수금 관리, 근태·연차, 월마감·세무 캘린더. 회계 기준(적격증빙·계정과목·부가세 매입공제)에 맞춰 만들고, 신고·발행·지급·마감 자체는 홈택스/세무·노무 대리인/Bolta 핸드오프로 둔다.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=False)과 바이트 동일.
+pipeline: fanout
+access_scope: org  # owner_org_id=org_room821
+
+agents:
+  - id: room821/accounting.agent/agent.md
+    path: apm/accounting.agent/agent.md
+
+skills:
+  - id: room821/skills/expense-evidence
+    path: apm/accounting.agent/skills/expense-evidence/SKILL.md
+    references:
+      - apm/accounting.agent/skills/expense-evidence/references/expense-form-fields.md
+  - id: room821/skills/ledger-automation
+    path: apm/accounting.agent/skills/ledger-automation/SKILL.md
+    references:
+      - apm/accounting.agent/skills/ledger-automation/references/ledger-pipeline.md
+  - id: room821/skills/vat-filing
+    path: apm/accounting.agent/skills/vat-filing/SKILL.md
+    references:
+      - apm/accounting.agent/skills/vat-filing/references/vat-return-fields.md
+  - id: room821/skills/withholding-payroll
+    path: apm/accounting.agent/skills/withholding-payroll/SKILL.md
+    references:
+      - apm/accounting.agent/skills/withholding-payroll/references/payroll-withholding-fields.md
+  - id: room821/skills/payables-management
+    path: apm/accounting.agent/skills/payables-management/SKILL.md
+    references:
+      - apm/accounting.agent/skills/payables-management/references/payables-fields.md
+  - id: room821/skills/receivables-management
+    path: apm/accounting.agent/skills/receivables-management/SKILL.md
+    references:
+      - apm/accounting.agent/skills/receivables-management/references/receivables-fields.md
+  - id: room821/skills/attendance-leave
+    path: apm/accounting.agent/skills/attendance-leave/SKILL.md
+    references:
+      - apm/accounting.agent/skills/attendance-leave/references/attendance-leave-fields.md
+  - id: room821/skills/closing-checklist
+    path: apm/accounting.agent/skills/closing-checklist/SKILL.md
+    references:
+      - apm/accounting.agent/skills/closing-checklist/references/closing-calendar.md
+  - id: room821/skills/accounting-compute
+    runtime: accounting-compute   # 결정적 계산 tool (부가세·원천징수·급여·aging). 제네릭 tool-runtime이 디스패치.
+  - id: room821/skills/schift-memory
+    runtime: schift-memory

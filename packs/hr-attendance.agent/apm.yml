@@ -1,0 +1,73 @@
+name: schift-hr-attendance-agent
+version: 0.1.0
+description: >
+  Schift HR/근태 APM. 직원의 휴가·근태 신청을 규제 Agent(법률·회칙)와
+  인사 Agent(조직 운영)가 병렬 검토하여 승인/반려/보완 판정을 내리고,
+  Schift approval 시스템과 연결한다.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=True지만 runnable
+# sub-agent도 있어 fan-out 유지, in-loop 툴 근거수집 W2b)과 바이트 동일.
+pipeline: fanout
+
+agents:
+  - id: schift/hr-attendance.agent/agent.md
+    path: apm/hr-attendance.agent/agent.md
+
+skills:
+  - id: schift/skills/hr-leave-intake
+    path: apm/hr-attendance.agent/skills/leave-intake/SKILL.md
+  - id: schift/skills/hr-regulation-review
+    path: apm/hr-attendance.agent/skills/regulation-review/SKILL.md
+    references:
+      - apm/hr-attendance.agent/skills/regulation-review/references/kr-labor-law-checklist.md
+  - id: schift/skills/hr-hrops-review
+    path: apm/hr-attendance.agent/skills/hrops-review/SKILL.md
+    references:
+      - apm/hr-attendance.agent/skills/hrops-review/references/leave-request-schema.md
+      - apm/hr-attendance.agent/skills/hrops-review/references/approval-rules.md
+  - id: schift/skills/hr-approval-dispatch
+    path: apm/hr-attendance.agent/skills/approval-dispatch/SKILL.md
+    references:
+      - apm/hr-attendance.agent/skills/approval-dispatch/references/approval-rules.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+knowledge:
+  - bucket_id: "kr-labor-law-reference"
+    bucket_name: kr-labor-law-reference
+    bucket_role: regulation_reference
+    retrieval_required: true
+    scope: read_only
+  - bucket_id: "{SCHIFT_COMPANY_RAG_BUCKET}"
+    bucket_name: default
+    bucket_role: company_hr_policy
+    retrieval_required: true
+    scope: read_only
+
+surface:
+  kind: internal_hr_assistant
+  edge_owner: schift-api
+  edge_endpoint: /v1/hr/leave-requests
+  recommended_inference_mode: public_router
+
+tool_policy:
+  allowed:
+    - schift-rag.retrieve
+    - schift.memory.append
+    - schift.memory.flush
+    - schift.memory.retrieve
+    - agent_hub.hooks.emit
+    - agent_hub.cost.log
+    - hr.regulation_search
+    - hr.company_policy_search
+    - hr.employee_leave_balance
+    - hr.team_leave_calendar
+    - hr.org_chart_lookup
+    - hr.create_approval_request
+    - hr.notify_user
+  blocked_by_default:
+    - external_web_search
+    - arbitrary_filesystem_crawl
+    - payroll_amount_calculation
+    - legal_final_judgement

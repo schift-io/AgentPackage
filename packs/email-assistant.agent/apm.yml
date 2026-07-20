@@ -1,0 +1,33 @@
+name: schift-email-assistant-agent
+version: 0.1.0
+description: >-
+  Schift email assistant (베타). Classifies an incoming Gmail thread
+  (skip / draft_reply / escalate) and, for relevant mail, drafts a
+  knowledge-grounded reply into the user's drafts folder for review. Never sends.
+  RAG runs against the org's configured knowledge bucket; the reply signature is
+  taken from the user's Gmail sendAs settings.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=True, sub_agent_plan=[])과 바이트 동일.
+pipeline: react
+
+agents:
+  - id: schift/email-assistant.agent/agent.md
+    path: apm/email-assistant.agent/agent.md
+
+skills:
+  - id: schift/skills/email-triage
+    path: apm/email-assistant.agent/skills/email-triage/SKILL.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+# 트리거: published gmail_trigger 워크플로(workflow-email-trigger-cron)가 새 메일을
+# hydrate해서 이 팩을 1회 실행한다(news-monitor와 동일한 cron→run 경로).
+delivery:
+  mode: api_digest
+  cron_via: gmail_trigger
+
+knowledge:
+  # 버킷은 org가 지정한 knowledge bucket을 런타임에 주입(document_hierarchy.knowledge.
+  # bucket_id). 하드코딩하지 않는다. 버킷 미지정 시 rag_search 없이 일반 초안만.
+  retrieval_required: false

@@ -1,0 +1,30 @@
+name: room821-bizplan-agent
+version: 0.2.0
+description: Room821 business-plan (수행계획서) agent package.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=False)과 바이트 동일.
+pipeline: fanout
+access_scope: org  # owner_org_id=org_room821
+
+# memory 계약 — hub_inputs가 약속한 "회사 메모리가 자동 반영"이 실제로 일어나려면
+# memory.* 툴이 fan-out in-loop 근거수집에 바인딩돼야 한다(bid-response와 동일 패턴,
+# 2026-07-11 pack-wiring-audit 갭 ①. agent_packs.py BIZPLAN_PACK과 수동 미러).
+memory:
+  requires:
+    tools: [memory.search, memory.recall, memory.cite]
+    scopes: [core, agent]
+
+agents:
+  - id: room821/bizplan.agent/agent.md
+    path: apm/bizplan.agent/agent.md
+
+skills:
+  - id: room821/skills/submission-writer
+    path: apm/bizplan.agent/skills/submission-writer/SKILL.md
+  - id: room821/skills/lightocr-parser
+    runtime: schift-ocr
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+  - id: room821/skills/bizplan-reviewer
+    runtime: agent-hub

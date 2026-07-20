@@ -1,0 +1,53 @@
+{
+  "_comment": [
+    "호스트 능력 어휘 — 팩이 runtime_boundary.host_services_only 로 요구할 수 있는 이름의 전체 집합.",
+    "여기 없는 이름을 팩이 선언하면 kit lint 가 실패한다(오타/무단 신규 차단).",
+    "이 파일이 어휘의 단일 정본이다. agent-hub 의 host_capabilities.py 는 장차 이걸 읽도록 수렴시킨다.",
+    "cloud_only = 유저 머신에서 강제 불가능한 능력. 이걸 요구하는 팩은 로컬 호스트에서 fail-closed 거절된다."
+  ],
+  "capabilities": {
+    "auth": "인증/식별",
+    "brand_bucket_rag": "브랜드 버킷 RAG 검색",
+    "session_bucket_rag": "세션 버킷 RAG 검색",
+    "directing_bucket_rag": "디렉팅 버킷 RAG 검색",
+    "tenant_core_memory_query": "테넌트 core memory 조회",
+    "text_generation_connector": "텍스트 생성 모델 호출",
+    "image_generation_connector": "이미지 생성 모델 호출",
+    "txt2img_connector": "txt2img 모델 호출",
+    "image_upscale_connector": "이미지 업스케일",
+    "image_search_connector": "이미지 검색",
+    "tts_connector": "음성 합성",
+    "bgm_asset_connector": "BGM 에셋 조회",
+    "vision_scorer": "비전 채점",
+    "multimodal_critique_scorer": "멀티모달 자가비평 채점",
+    "hwpx_render_connector": "HWPX 문서 렌더",
+    "render_worker": "렌더 워커(서버)",
+    "stitch_worker": "영상 스티치 워커(서버)",
+    "run_persistence": "런 기록 지속성",
+    "draft_persistence": "초안 지속성",
+    "note_storage": "노트 저장",
+    "source_upload_storage": "원본 업로드 저장",
+    "usage_ledger": "사용량 원장",
+    "credit_metering": "크레딧 미터링",
+    "connector_handoff": "외부 커넥터 핸드오프",
+    "higgsfield_mcp": "Higgsfield MCP 서버",
+    "block_catalog": "워크플로 블록 카탈로그",
+    "awp_provenance_minting": "AWP provenance 민팅",
+    "publish_gate": "발행 게이트"
+  },
+  "cloud_only": ["usage_ledger", "credit_metering"],
+  "suspected_drift": [
+    ["usage_ledger", "credit_metering"],
+    ["run_persistence", "draft_persistence"]
+  ],
+  "hosts": {
+    "agent-hub": {
+      "description": "Schift Cloud 실행 호스트. 오늘 전 팩을 실행 중이므로 전 능력 제공.",
+      "provides": "*"
+    },
+    "local-byo": {
+      "description": "로컬 BYO-LLM 하네스(Claude Code / Codex). 과금 원장은 유저 머신에서 강제 불가, 서버 워커 없음.",
+      "excludes": ["usage_ledger", "credit_metering", "render_worker", "stitch_worker", "connector_handoff", "higgsfield_mcp"]
+    }
+  }
+}

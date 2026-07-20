@@ -1,0 +1,61 @@
+name: room821-reels-agent
+version: 0.1.0
+description: Room821 Reels/Shorts APM that prepares template-based vertical videos with approval checkpoints.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=False)과 바이트 동일.
+pipeline: fanout
+
+agents:
+  - id: room821/reels.agent/agent.md
+    path: apm/reels.agent/agent.md
+
+skills:
+  - id: room821/skills/reels-storyboard-writer
+    path: apm/reels.agent/skills/reels-storyboard-writer/SKILL.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+awp_operations:
+  - id: reels-template-video
+    contract_version: awp.reels.template_video.v1
+    purpose: Build an approval-ready vertical Reels/Shorts packet from a source topic, media policy, captions, TTS, BGM, and render constraints.
+    approval_required: true
+    host_route: /v1/agents/reels/operations/reels-template-video/runs
+    render_worker:
+      binding: schift.reels.remotion-renderer.v1
+      engine: remotion
+      composition_id: SchiftReelsTemplate
+      job_route: /v1/sessions/{session_id}/reels/render-jobs
+      ffmpeg_role: final_mux_and_encoding
+
+runtime_boundary:
+  apm_owns:
+    - user_intent_routing
+    - awp_selection
+    - approval_summary
+    - ambiguity_resolution
+    - media_source_choice
+  awp_owns:
+    - scene_storyboard_schema
+    - vertical_safe_area_rules
+    - caption_timing_policy
+    - tts_bgm_render_packet
+    - usage_metering_events
+    - image_search_result_logging
+  host_services_only:
+    - auth
+    - source_upload_storage
+    - image_search_connector
+    - image_generation_connector
+    - tts_connector
+    - bgm_asset_connector
+    - render_worker
+    - usage_ledger
+    - run_persistence
+  forbidden_host_policy:
+    - caption_rewrite_prompt
+    - scene_order_decision
+    - safe_area_text_policy
+    - media_reuse_policy
+    - billing_metering_policy

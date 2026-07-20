@@ -1,0 +1,36 @@
+name: schift-news-monitor-agent
+version: 0.1.0
+description: Schift keyword news monitoring & periodic briefing agent package (베타). Finds Korean+global news for tracked keywords from official/press sources and builds a cron-deliverable daily briefing, deduped against what was already reported.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=True지만 runnable
+# sub-agent도 있어 fan-out 유지, in-loop 툴 근거수집 W2b)과 바이트 동일.
+pipeline: fanout
+
+agents:
+  - id: schift/news-monitor.agent/agent.md
+    path: apm/news-monitor.agent/agent.md
+
+skills:
+  - id: schift/skills/news-brief
+    path: apm/news-monitor.agent/skills/news-brief/SKILL.md
+  - id: schift/skills/inject-current-date
+    runtime: inject-current-date   # 현재 KST 날짜 주입 (신규성·속보 판정 grounding)
+  - id: schift/skills/news-fetch
+    runtime: news-fetch   # 결정적 네이버 뉴스 적재 (LLM tool-call 의존 제거, 환각 방지)
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+# 정기 브리핑은 Cloud Scheduler(X-Cron-Secret) → API 엔드포인트가 이 팩을
+# 키워드 셋으로 1회 실행한 뒤 결과를 브리핑으로 노출한다. (scholarship과 동일 경로)
+delivery:
+  mode: api_digest
+  cron_via: cloud_scheduler
+  consumer: phedy
+
+knowledge:
+  # MVP(PoC)는 라이브 웹검색(research_queries) 그라운딩만 — 발견은 제목+요약 스니펫.
+  # "새 기사만" diff + 본문 RAG가 필요해지면 승격: 발견=네이버 뉴스 검색 API,
+  # 본문=website-crawler/ingest 파이프라인으로 originallink 후처리 → 버킷 적재.
+  # (남들은 이 본문 추출 자리에 Firecrawl을 붙이지만 우리는 자체 ingest로 메운다.)
+  retrieval_required: false

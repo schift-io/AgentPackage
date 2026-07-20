@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OgilvyDoBrief",
+  "description": "Ogilvy DO BRIEF as a structured state object driving all downstream ad creative.",
+  "type": "object",
+  "required": [
+    "brand", "product", "why_brief", "target_raw", "the_do", "how",
+    "core_thought", "must_know", "must_feel", "why_care", "success_metric", "mandatories"
+  ],
+  "properties": {
+    "brand": { "type": "string" },
+    "product": { "type": "string" },
+    "job_no": { "type": "string" },
+    "date": { "type": "string", "description": "YYYY-MM-DD" },
+
+    "why_brief": { "type": "string", "description": "비즈니스 목표 / 어떻게 더 팔 것인가" },
+    "target_raw": { "type": "string", "description": "영향 줄 세그먼트 서술(현재 구매행동 포함)" },
+    "the_do": { "type": "string", "description": "실제 행동 변화. '더 많이 산다' 금지, 구체 행동" },
+    "how": {
+      "type": "string",
+      "enum": ["촉구", "알고싶게", "결심강화", "인식전환"],
+      "description": "커뮤니케이션이 행동을 어떻게 달성하는가"
+    },
+    "core_thought": { "type": "string", "description": "핵심 생각 한 줄" },
+    "must_know": { "type": "string", "description": "제품 사실 근거" },
+    "must_feel": { "type": "string", "description": "유발할 감정. '친근/신뢰' 진부표현 금지" },
+    "why_care": { "type": "string", "description": "왜 관심 가져야 하나" },
+    "success_metric": { "type": "string", "description": "구매↑/빈도↑/전환/객단가↑ 등" },
+    "mandatories": { "type": "string", "description": "반드시/절대 + 채널" },
+
+    "coverage_check": {
+      "type": "object",
+      "description": "생성 전 필수 검증. 각 요소를 커버하는 앵글을 적는다. 빈 값이 있으면 진행 금지.",
+      "properties": {
+        "hook": { "type": "string" },
+        "pain": { "type": "string" },
+        "value_proof": { "type": "string" },
+        "offer": { "type": "string" },
+        "urgency": { "type": "string" },
+        "cta": { "type": "string" }
+      }
+    },
+    "segment_axis": {
+      "type": "string",
+      "enum": ["lifecycle", "engagement", "value_fit", "role", "industry"],
+      "description": "팬아웃 축 택1"
+    },
+    "anchors": {
+      "type": "object",
+      "description": "캐릭터/제품/환경 앵커. character-sheet 스킬이 채운다.",
+      "properties": {
+        "character_json": { "type": "object" },
+        "product": { "type": "string", "description": "로고·패키징·색 등 고정 시각 요소" },
+        "environment": { "type": "string" }
+      }
+    }
+  }
+}

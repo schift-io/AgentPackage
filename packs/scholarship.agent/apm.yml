@@ -1,0 +1,31 @@
+name: schift-scholarship-agent
+version: 0.1.0
+description: Schift scholarship search & periodic digest agent package (베타). Finds Korean scholarships from official sources and builds a cron-deliverable digest filtered by student profile.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=False)과 바이트 동일.
+pipeline: fanout
+
+agents:
+  - id: schift/scholarship.agent/agent.md
+    path: apm/scholarship.agent/agent.md
+
+skills:
+  - id: schift/skills/scholarship-search
+    path: apm/scholarship.agent/skills/scholarship-search/SKILL.md
+  - id: schift/skills/inject-current-date
+    runtime: inject-current-date   # 현재 KST 날짜 주입 (pre-run grounding behavior)
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+# 정기 다이제스트는 Cloud Scheduler(X-Cron-Secret) → API 엔드포인트가 이 팩을
+# 학생 프로필로 1회 실행한 뒤 결과를 다이제스트로 노출한다. Phedy가 API로 소비.
+delivery:
+  mode: api_digest
+  cron_via: cloud_scheduler
+  consumer: phedy
+
+knowledge:
+  # MVP는 라이브 웹검색(research_queries) 그라운딩만 사용 — 버킷 없음.
+  # 승격 시 website-crawler로 kosaf/대학 공지를 적재한 버킷을 여기 붙인다.
+  retrieval_required: false

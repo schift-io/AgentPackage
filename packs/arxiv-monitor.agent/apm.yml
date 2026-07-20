@@ -1,0 +1,31 @@
+name: schift-arxiv-monitor-agent
+version: 0.1.0
+description: Schift research-interest arXiv monitoring & periodic briefing agent package (베타). Finds new arXiv papers for tracked research interests and builds a cron-deliverable briefing, deduped against what was already reported.
+extends: ../runtime.yml
+# news-monitor.agent/apm.yml과 동일 선언적 pipeline 패턴 — 무동작 변경.
+pipeline: fanout
+
+agents:
+  - id: schift/arxiv-monitor.agent/agent.md
+    path: apm/arxiv-monitor.agent/agent.md
+
+skills:
+  - id: schift/skills/arxiv-brief
+    path: apm/arxiv-monitor.agent/skills/arxiv-brief/SKILL.md
+  - id: schift/skills/inject-current-date
+    runtime: inject-current-date   # 현재 KST 날짜 주입 (신규성 판정 grounding)
+  - id: schift/skills/arxiv-fetch
+    runtime: arxiv-fetch   # 결정적 arXiv API 적재 (LLM tool-call 의존 제거, 환각 방지)
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+# 정기 브리핑은 Cloud Scheduler(X-Cron-Secret) → API 엔드포인트가 이 팩을
+# 관심사 셋으로 1회 실행한 뒤 결과를 브리핑으로 노출한다. (news-monitor와 동일 경로)
+delivery:
+  mode: api_digest
+  cron_via: cloud_scheduler
+  consumer: phedy
+
+knowledge:
+  # 발견=arXiv API 초록(summary) 전문. 본문 PDF 전체 RAG 적재는 승격 단계로 미룸.
+  retrieval_required: false

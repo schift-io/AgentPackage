@@ -1,0 +1,122 @@
+name: room821-image-gen-agent
+version: 0.2.0
+description: >-
+  이미지 생성 APM. gongnyang-prompt-kit V2.4의 한국어 hwabo 원본과 라우터 레퍼런스를
+  채택하고, 멀티모델(gpt-image-2/higgsfield/z-image-turbo) 프로파일을 결합한다.
+  기존 영어 taxonomy와는 0.2.0에서 단절된다. 요청 -> compile_image_prompt(순수함수,
+  한국어 C1-C12/Format A-B/AR-끝/HEX/검증) -> 승인 -> generate_image(기존
+  image_service, gpt-image-2) -> [선택] 자가비평 보정 루프.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=True, sub_agent_plan=[])과 바이트 동일.
+pipeline: react
+access_scope: org  # owner_org_id=org_room821 — 도그푸드 전용, ad-creative와 동일 게이팅
+
+agents:
+  - id: room821/image-gen.agent/agent.md
+    path: apm/image-gen.agent/agent.md
+
+skills:
+  - id: room821/skills/image-prompt-compiler
+    path: apm/image-gen.agent/skills/prompt-compiler/SKILL.md
+    references:
+      - apm/image-gen.agent/skills/prompt-compiler/references/categories-and-formats.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/model-profiles.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/validation-rules.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/concept-axes.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/editorial-hwabo.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typography-layout.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/style-taxonomy.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/photo-vocab.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/look-presets.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster-router.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP1-photo-mask.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP2-text-tunnel.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP3-type-architecture.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP4-optical-type.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP5-tactile-destruction.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP6-swiss-kinetic.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP7-material-sculpt.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP8-liquid-chrome.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP9-inflatable.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP10-opart-pattern.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP11-acid-graphics.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP12-future-medieval.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP13-anamorphic.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/typo-poster/TP14-micrography.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/promo-router.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/promo/P1-typomask.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/promo/P2-typo-env.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/promo/P3-crop-occlusion.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/promo/P4-color-campaign.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/promo/P5-meta-ui.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/promo/P6-street-collage.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/promo/P7-editorial-rotate.md
+      - apm/image-gen.agent/skills/prompt-compiler/references/promo/P8-mono-staging.md
+  - id: room821/skills/image-agentic-refine
+    path: apm/image-gen.agent/skills/agentic-refine/SKILL.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+# tools: compile_image_prompt(순수 컴파일+검증, 과금 없음) + generate_image(기존
+# image_service 경로, 검증 통과 후에만 호출). 둘 다 ALLOWED_TOOLS 화이트리스트에 등록됨.
+tools:
+  - name: compile_image_prompt
+    description: >-
+      요청+한국어 원본 카테고리/룩/해상도/타깃모델을 원본 hwabo 규칙과 선택된
+      라우터 레퍼런스에 맞춰 컴파일하고 검증한다(생성/과금 없음). args: request(필수), category?(C1-C12),
+      look_preset?, resolution_id?, target_model?(gpt-image-2|higgsfield|
+      z-image-turbo), background?, palette?([HEX,...]), text_in_image?.
+  - name: generate_image
+    description: >-
+      compile_image_prompt가 돌려준 compiled_prompt/api_size로 실제 이미지를
+      생성한다. args: prompt(필수, compiled_prompt 그대로), size(api_size 그대로).
+
+awp_operations:
+  - id: image-gen
+    contract_version: awp.image_gen.compile_generate.v1
+    purpose: >-
+      요청을 gongnyang 한국어 원본 hwabo 프롬프트로 컴파일·검증하고, 승인 후
+      gpt-image-2로 생성한다. 이미지당 raw-COGS CR 과금(pricing.py, GO 대기).
+    approval_required: true
+    host_route: /v1/agents/image-gen/operations/image-gen/runs
+    image_model:
+      default: gpt-image-2   # image_service.DEFAULT_MODEL — env GPT_IMAGE_MODEL로 오버라이드
+      adapter_env: GPT_IMAGE_MODEL
+      # cost_usd는 image_service.estimate_image_cost_usd(model,size,quality)가
+      # 실행마다 산출 — 하드코딩 상수 아님. CR 환산 rate는 PRICING.md/pricing.py
+      # GO 확정 전까지 코드 미반영(§ CR 과금 절 참조).
+      cost_basis: raw_cogs_per_image
+      billing_status: rate_pending_go
+    agentic_refine:
+      enabled: true
+      default_max_iterations: 2
+      quality_threshold: 0.75
+      critique_source: multimodal_llm  # 런타임 주입, 이 팩이 모델을 호출하지 않음
+
+runtime_boundary:
+  apm_owns:
+    - user_intent_routing
+    - awp_selection
+    - approval_summary
+    - ambiguity_resolution
+    - target_model_choice
+    - refine_iteration_offer
+  awp_owns:
+    - category_taxonomy_c1_c12
+    - format_a_b_selection
+    - model_profile_axis_weighting
+    - ar_trailing_token_rule
+    - palette_and_negative_validation
+    - usage_metering_events
+  host_services_only:
+    - auth
+    - image_generation_connector   # image_service.generate_and_store (gpt-image-2, R2 스테이징)
+    - multimodal_critique_scorer   # agentic_refine 루프의 critique_fn 주입처
+    - usage_ledger
+    - run_persistence
+  forbidden_host_policy:
+    - category_taxonomy_definition
+    - model_profile_axis_weighting
+    - validation_whitelist_policy
+    - billing_metering_policy

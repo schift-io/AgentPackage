@@ -1,0 +1,41 @@
+name: room821-marketer-agent
+version: 0.1.0
+description: Marketing agent (베타). Owns blog/cardnews/threads/linkedin/poster outputs, routed by intake. Marketing-methodology QC sub-agent verifies every variant and checks brand-kit consistency.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=False)과 바이트 동일.
+pipeline: fanout
+access_scope: org  # owner_org_id=org_room821
+
+# memory 계약 — blog/cardnews variant를 포함한 실사용자 경로가 회사 메모리를
+# 조회하려면 memory.* 툴이 fan-out in-loop 근거수집에 바인딩돼야 한다
+# (bid-response와 동일 패턴, 2026-07-11 pack-wiring-audit 갭 ②.
+# agent_packs.py MARKETER_PACK과 수동 미러).
+memory:
+  requires:
+    tools: [memory.search, memory.recall, memory.cite]
+    scopes: [core, agent]
+
+agents:
+  - id: room821/marketer.agent/agent.md
+    path: apm/marketer.agent/agent.md
+    # SOUL.md: 설치 시 정해지는 타겟/마케터 페르소나. agent 프롬프트에 합쳐 주입된다.
+    soul: apm/marketer.agent/SOUL.md
+
+skills:
+  - id: room821/skills/blog-writer
+    uses: apm/blog.agent/skills/blog-writer/SKILL.md
+  - id: room821/skills/cardnews-generator
+    uses: apm/cardnews.agent/skills/cardnews-generator/SKILL.md
+  - id: room821/skills/threads-writer
+    path: apm/marketer.agent/skills/threads-writer/SKILL.md
+  - id: room821/skills/linkedin-writer
+    path: apm/marketer.agent/skills/linkedin-writer/SKILL.md
+  - id: room821/skills/poster-writer
+    path: apm/marketer.agent/skills/poster-writer/SKILL.md
+  - id: room821/skills/cardnews-style-hub
+    path: apm/marketer.agent/skills/cardnews-style-hub/SKILL.md
+  - id: room821/skills/marketing-methodology-qc
+    path: apm/marketer.agent/skills/marketing-methodology-qc/SKILL.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory

@@ -1,0 +1,35 @@
+name: room821-cardnews-agent
+version: 0.1.0
+description: Room821 marketing card-news agent package. Hook → body → CTA frame (마케터 산출물 — IR 프레임 미적용).
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=False)과 바이트 동일.
+pipeline: fanout
+
+# memory 계약 — MARKETER_PACK 'cardnews' variant로 실주행되는 경로도 회사 메모리
+# 그라운딩이 필요하다(bid-response와 동일 패턴, 2026-07-11 pack-wiring-audit
+# 갭 ②. agent_packs.py CARDNEWS_PACK과 수동 미러).
+memory:
+  requires:
+    tools: [memory.search, memory.recall, memory.cite]
+    scopes: [core, agent]
+
+agents:
+  - id: room821/cardnews.agent/agent.md
+    path: apm/cardnews.agent/agent.md
+
+skills:
+  - id: room821/skills/cardnews-generator
+    path: apm/cardnews.agent/skills/cardnews-generator/SKILL.md
+    references:
+      - apm/cardnews.agent/skills/cardnews-generator/references/card-templates.md
+  - id: room821/skills/deck-qc
+    uses: apm/deck.agent/skills/deck-qc/SKILL.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+references:
+  # 색 팔레트는 deck.agent 패키지 소유 — 카드뉴스도 동일 계약을 따른다
+  - apm/deck.agent/skills/deck-designer/references/color-palettes.md
+  # 카드뉴스 구성 템플릿/훅 공식/레이아웃 레퍼런스 (cardnews-generator 소유)
+  - apm/cardnews.agent/skills/cardnews-generator/references/card-templates.md

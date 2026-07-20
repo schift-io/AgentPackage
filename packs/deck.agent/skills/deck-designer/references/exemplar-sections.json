@@ -1,0 +1,242 @@
+[
+  {
+    "agent_id": "exemplar",
+    "sections": [
+      {
+        "id": "1",
+        "title": "기업 AX를 위한 AI 메모리 서비스",
+        "bullets": [
+          {"claim": "기업 데이터를 AI에게 알려주는 가장 쉽고 빠른 방법", "details": []},
+          {"claim": "주식회사 룸821 · contact-us@room821.im", "details": []}
+        ]
+      },
+      {
+        "id": "2",
+        "title": "자사 AI 수요 폭증, 현장 실패도 폭증",
+        "bullets": [
+          {
+            "claim": "AI 도입에 준비된 기업 데이터 7%",
+            "details": [
+              "사내 맥락의 부재 — 회사·고객·프로젝트 맥락 모름",
+              "흩어져 있는 데이터 — Slack·Notion·Drive 분산",
+              "신뢰할 수 없는 답변 — 출처·최신성·근거 약함",
+              "권한·보안 문제 — 권한 중요 문서까지 노출"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "title": "문제는 도입이 아니라 기업 환경 설정",
+        "bullets": [
+          {
+            "claim": "검색·메모리·권한·워크플로우·모니터링이 따로 논다",
+            "details": [
+              "데이터 영역 — 연결(Glean)·검색(OpenSearch)·권한(Zep)",
+              "업무 실행 영역 — 워크플로우(Dify)·평가(LangSmith)"
+            ]
+          },
+          {
+            "claim": "이 모든 시스템을 기업 환경에 맞게 설정해야 한다",
+            "details": ["SSO", "보안", "감사로그", "네트워크", "데이터 거버넌스"]
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "title": "막히는 병목을 하나의 서비스로",
+        "bullets": [
+          {
+            "claim": "INPUT — 자사 데이터",
+            "details": ["PDF·DOCX·이미지", "사내 문서", "CS 상담 이력", "외부 업무용 툴"]
+          },
+          {
+            "claim": "Schift AX Engine — 하나의 관리형 제품",
+            "details": [
+              "Connect — OAuth로 문서 연결",
+              "Memory — 기업 메모리 레이어",
+              "Retrieval — 하이브리드 검색·출처",
+              "Permission — 원본 권한 기반 실행",
+              "Workflow — AI 실행 워크플로우",
+              "Governance — 로그·감사·비용·품질"
+            ]
+          },
+          {
+            "claim": "OUTPUT — API 응답",
+            "details": ["응답·출처", "시간·모델", "신뢰도·비용"]
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "title": "지식 자산화부터 업무 실행까지",
+        "bullets": [
+          {"claim": "흩어진 사내 지식을 연결", "details": ["복잡한 전처리 과정 단축"]},
+          {"claim": "자료의 신뢰도를 판단", "details": ["최신성·공식성·중복 고려"]},
+          {"claim": "근거 기반 검색 (RAG)", "details": ["출처와 인용 위치 제공"]},
+          {"claim": "답변을 워크플로우로 전환", "details": ["답을 넘어 실제 일을 수행"]},
+          {"claim": "AI 운영 및 모니터링", "details": ["성과를 정량적으로 증명"]}
+        ]
+      },
+      {
+        "id": "6",
+        "title": "지식 통합과 업무 실행, 두 병목을 동시에",
+        "bullets": [
+          {
+            "claim": "엔드투엔드 AX는 우상단 공백",
+            "details": ["Glean/Notion/Copilot/Gemini/Allganize/Elastic/Zep/Dify"]
+          }
+        ]
+      },
+      {
+        "id": "7",
+        "title": "고객지원 AX — 응답 속도와 품질 향상",
+        "bullets": [
+          {
+            "claim": "상담원이 직접 자료를 뒤져가며 답변 작성",
+            "details": ["Slack·Zendesk·Notion·CRM 수동 검색"]
+          },
+          {
+            "claim": "티켓 수신부터 답변 초안까지 자동",
+            "details": [
+              "티켓 자동 분류·우선순위 지정",
+              "히스토리·유사 이슈·정책 확인",
+              "시스템 업데이트 & 로그 저장"
+            ]
+          },
+          {"claim": "CS 응답 속도 및 품질의 향상", "details": []}
+        ]
+      },
+      {
+        "id": "8",
+        "title": "영업 AX — 검색부터 제안 초안까지",
+        "bullets": [
+          {
+            "claim": "AE가 고객 자료·회의록·계약서를 따로 검색",
+            "details": ["고객 자료·미팅노트·제안서·계약서 분산"]
+          },
+          {
+            "claim": "고객 맥락 통합부터 제안서 초안까지",
+            "details": [
+              "고객 맥락 통합 — CRM·미팅노트·Slack",
+              "제안서 초안 자동 생성",
+              "법무 검토 조항 표시",
+              "Slack/CRM 자동 업데이트"
+            ]
+          },
+          {"claim": "자료 검색부터 제안 초안까지 지원", "details": []}
+        ]
+      },
+      {
+        "id": "9",
+        "title": "내부 운영 AX — 반복 업무 감소",
+        "bullets": [
+          {
+            "claim": "직원이 직접 정책·복지·온보딩 문서를 찾음",
+            "details": ["정책·복지·구매·보안·온보딩 문서 분산"]
+          },
+          {
+            "claim": "질문 수신부터 승인 워크플로우까지",
+            "details": [
+              "권한에 맞는 정책 검색",
+              "최신 공식 문서 우선 사용",
+              "신청/승인 workflow 자동 처리",
+              "담당 부서 자동 라우팅"
+            ]
+          },
+          {"claim": "반복 업무 감소, 업무 효율성 향상", "details": []}
+        ]
+      },
+      {
+        "id": "10",
+        "title": "6개 지표로 측정 가능한 변화",
+        "bullets": [
+          {"claim": "검색 시간 감소", "details": ["메일·문서·노션을 한 줄 질의로 통합"]},
+          {"claim": "답변 품질 표준화", "details": ["공식 문서 기준 일관된 답변"]},
+          {"claim": "실행 로그 축적", "details": ["질의·출처·결과 추적 감사 로그"]},
+          {"claim": "최신 문서 기반 응답", "details": ["구버전·중복 문서 자동 필터링"]},
+          {"claim": "권한 기반 업무 통제", "details": ["원본 권한 그대로 답변 범위 제한"]},
+          {"claim": "AI 비용 감소", "details": ["캐싱·재사용으로 LLM 호출 최소화"]}
+        ]
+      },
+      {
+        "id": "11",
+        "title": "목표 시장 분석",
+        "bullets": [
+          {"claim": "TAM 글로벌 Enterprise AI 약 37조 원", "details": ["CAGR 38%, 2030년 233조 원 전망"]},
+          {"claim": "SAM 국내 제조 중소·중견 AX 약 6조 원", "details": ["약 160,000개 계정 규모"]},
+          {"claim": "SOM 국내 제조·프랜차이즈 AX 약 260억", "details": ["전체 시장 5,200억 × 5% 점유율"]}
+        ]
+      },
+      {
+        "id": "12",
+        "title": "DX는 끝났지만 AI 실행 레이어는 부재",
+        "bullets": [
+          {"claim": "국내 공장 보유 중소·중견 163,273개", "details": []},
+          {"claim": "데이터 수집 중 60.8%", "details": []},
+          {"claim": "AI 도입 0.1%", "details": ["중기부 2025 스마트제조혁신실태조사, OECD KOREA SMI 2026"]}
+        ]
+      },
+      {
+        "id": "13",
+        "title": "비즈니스 모델",
+        "bullets": [
+          {
+            "claim": "셀프서브 + 구축의 4티어",
+            "details": [
+              "Free 무료 — 개인·소규모 팀 무료 검증",
+              "Starter 149만 원/월 — 첫 도입 기본 플랜",
+              "Business 490만 원/월 — 프랜차이즈·제조·다지점",
+              "Enterprise 별도 문의 — BYOK·격리·SSO·SLA"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "14",
+        "title": "무료 진단과 PoC로 초기 시장 공략",
+        "bullets": [
+          {"claim": "Thread 기반 영업", "details": ["팔로우 2,000명 — 잠재 고객 발굴"]},
+          {"claim": "무료 기업 AX 진단", "details": ["Vertical AX 가능성 제공"]},
+          {"claim": "기업 PoC", "details": ["500~1,000만 원 — 빠른 검증"]},
+          {"claim": "운영 계약", "details": ["월 1~300만 원 + 사용량 기반"]},
+          {"claim": "AX Pack 제공", "details": ["버티컬 확장 + 반복 매출 전환"]}
+        ]
+      },
+      {
+        "id": "15",
+        "title": "2028년 매출 33.9억, 이익률 72%",
+        "bullets": [
+          {"claim": "구축 노하우의 제품화로 사용량 매출 증대", "details": ["2026년 2.3억 원 (5계정) → 2027년 9억 원 (40계정) → 2028년 33.9억 원 (150계정)"]}
+        ]
+      },
+      {
+        "id": "16",
+        "title": "데이터로 상상을 실현하는 팀, 룸821",
+        "bullets": [
+          {
+            "claim": "핵심 3인",
+            "details": ["강정석 CEO — Full-Stack Developer", "김남훈 CMO — UX/UI Designer", "김민석 CTO — AI Developer"]
+          },
+          {
+            "claim": "트랙레코드",
+            "details": [
+              "2026 청창사 16기 선정 · Phedy MAU 7,000명",
+              "2026 베이커리 체인·종로학원 MOU 체결",
+              "2025 R&D 디딤돌 우수 과제 · 특허 출원",
+              "2024 예비창업패키지(연세대) 우수 졸업"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "17",
+        "title": "이제 누구나 AI로 만들 수 있습니다",
+        "bullets": [
+          {"claim": "중요해진 건 \"내 자료를 정확히 쓰게 만드는 능력\"", "details": []},
+          {"claim": "주식회사 룸821 · contact-us@room821.im", "details": []}
+        ]
+      }
+    ]
+  }
+]

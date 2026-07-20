@@ -1,0 +1,27 @@
+name: room821-blog-agent
+version: 0.1.0
+description: Room821 blog-writing agent package (베타). Promo blog posts for SMBs, written to read human (AI 티 제거). Hook → empathy → body → proof → CTA frame.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=False)과 바이트 동일.
+pipeline: fanout
+
+# memory 계약 — MARKETER_PACK 'blog' variant로 실주행되는 경로도 회사 메모리
+# 그라운딩이 필요하다(bid-response와 동일 패턴, 2026-07-11 pack-wiring-audit
+# 갭 ②. agent_packs.py BLOG_PACK과 수동 미러).
+memory:
+  requires:
+    tools: [memory.search, memory.recall, memory.cite]
+    scopes: [core, agent]
+
+agents:
+  - id: room821/blog.agent/agent.md
+    path: apm/blog.agent/agent.md
+
+skills:
+  - id: room821/skills/blog-writer
+    path: apm/blog.agent/skills/blog-writer/SKILL.md
+  - id: room821/skills/blog-humanize-qc
+    path: apm/blog.agent/skills/blog-writer/HUMANIZE-QC.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory

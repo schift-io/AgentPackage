@@ -1,0 +1,21 @@
+name: gentz-bakery-agent
+version: 0.1.0
+description: 겐츠베이커리 고객 챗봇. 매장·메뉴·시즌·후기는 RAG, 알레르기는 식약처 전성분 기반 결정적 조회.
+visibility: corporate
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=True, sub_agent_plan=[])과 바이트 동일.
+pipeline: react
+
+agents:
+  - id: gentz/gentz.agent/agent.md
+    path: apm/gentz.agent/agent.md
+
+skills:
+  - id: gentz/skills/gentz-qa
+    path: apm/gentz.agent/skills/gentz-qa/SKILL.md
+  - id: gentz/skills/allergy-check
+    path: apm/gentz.agent/skills/allergy-check/SKILL.md
+    runtime: gentz-allergy
+  - id: room821/skills/schift-memory
+    runtime: schift-memory

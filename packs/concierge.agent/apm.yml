@@ -1,0 +1,68 @@
+name: schift-concierge-agent
+version: 0.1.0
+description: >
+  Schift Concierge — schift.io 랜딩의 공개 위젯 두뇌(베타). 익명 방문자를 안내한다:
+  공개 문서(schift-public-docs) 근거로 pre-sales 질문에 답하고, 관심을 자격판별하고,
+  상담(Cal)으로 예약을 잇고, 필요하면 사람에게 에스컬레이션한다. CS(결제 고객 지원)가
+  아니라 pre-sales 컨시어지다. 엣지(공개 위젯·publishable 키·도메인 스코프·operator inbox)는
+  schift-api가 소유하고, 이 팩은 그 뒤의 두뇌로 위임받아 실행된다.
+extends: ../runtime.yml
+# telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
+# 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=False, sub_agent_plan=[])과 바이트 동일.
+pipeline: fanout
+
+agents:
+  - id: schift/concierge.agent/agent.md
+    path: apm/concierge.agent/agent.md
+    soul: apm/concierge.agent/SOUL.md
+
+skills:
+  - id: schift/skills/concierge-qa
+    path: apm/concierge.agent/skills/concierge-qa/SKILL.md
+  - id: schift/skills/lead-qualify
+    path: apm/concierge.agent/skills/lead-qualify/SKILL.md
+  - id: schift/skills/book-consultation
+    path: apm/concierge.agent/skills/book-consultation/SKILL.md
+  - id: schift/skills/escalate-to-human
+    path: apm/concierge.agent/skills/escalate-to-human/SKILL.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+# 공개 문서 RAG 근거(읽기 전용). 엣지가 넘긴 질문은 이 버킷에서만 grounding.
+# docs/public/** 만 ingest 된 corpus (documentation.md 규칙: 챗봇 corpus는 docs/public).
+knowledge:
+  bucket_id: 23a08b74bfa540b88e2afbe4b7a0e74c
+  bucket_name: schift-public-docs
+  bucket_role: public_presales_docs
+  retrieval_required: true
+  scope: read_only_public
+
+# 공개 익명 웹 표면이므로 단일 RTX 의존(fan-out 502 리스크)을 피하고
+# 기본은 public_router(저비용 호스팅) 모드를 권장한다. A3B는 test/override.
+surface:
+  kind: public_web_widget
+  edge_owner: schift-api
+  edge_endpoint: /v1/widget/chat
+  recommended_inference_mode: public_router   # AGENT_HUB_INFERENCE_MODE=public_router
+  delegated_from:
+    site_key_env: SCHIFT_CONCIERGE_SITE_KEY
+    agent_id: agt_402035b4b34a
+  consultation:
+    cal_url: https://cal.com/jeongseok-kang/ax-discovery
+    intake_url: https://schift.io/consultation
+    kakao_openchat_url: https://open.kakao.com/o/sXC5fZbi
+
+# pre-sales 도구만 허용. 결제·계정·환불 같은 CS 도구는 이 표면에 두지 않는다.
+tool_policy:
+  allowed:
+    - schift-rag.retrieve
+    - schift_search.query
+    - schift.memory.append
+    - schift.memory.flush
+    - agent_hub.hooks.emit
+    - agent_hub.cost.log
+  blocked_by_default:
+    - external_web_search
+    - arbitrary_filesystem_crawl
+    - account_or_billing_mutation
+    - payment_action
