@@ -138,30 +138,68 @@ def cmd_lint(args: argparse.Namespace) -> int:
 
 
 def cmd_market(args: argparse.Namespace) -> int:
-    """`marketplace.publish: true` 를 선언한 팩만 실어 marketplace.json 을 만든다."""
+    """`marketplace.publish: true` 를 선언한 팩만 실어 marketplace.json 을 만든다.
+
+    **source는 이 repo 안의 상대경로가 아니라 각 팩의 공개 repo를 가리킨다.**
+    이 repo(AgentPackage)는 private이고 내부 팩 24개를 담고 있어서, 마켓플레이스로
+    쓰려고 public으로 뒤집으면 그 24개 소스가 통째로 노출된다 — `marketplace.json`은
+    *목록에 뭘 싣느냐*만 통제하지 *repo에 뭐가 보이느냐*는 통제하지 못한다.
+
+    그래서 공개 팩은 **팩마다 자기 public repo**를 갖고, 여기서는 그 repo를
+    `git-subdir`/`url` 소스로 가리키기만 한다. 공식 Claude 마켓플레이스가 쓰는
+    형식과 동일하며, `sha` 핀이 곧 무결성 보증이다(우리 content-hash와 같은 철학).
+
+        marketplace:
+          publish: true
+          repo: https://github.com/schift-io/<pack>.git
+          ref: main
+          sha: <40-hex>        # 없으면 ref만 — 재현 불가라 경고한다
+          path: <subdir>       # repo 안 하위경로면 git-subdir
+    """
     plugins: list[dict[str, Any]] = []
     skipped: list[str] = []
+    unpinned: list[str] = []
     for pack in _pack_dirs(None):
         manifest = _load_yaml(pack / "apm.yml")
         market = manifest.get("marketplace") or {}
         if not market.get("publish"):
             skipped.append(pack.name)
             continue
+
+        repo_url = market.get("repo")
+        if not repo_url:
+            sys.exit(
+                f"{pack.name}: marketplace.publish is true but 'repo' is missing. "
+                "공개 팩은 자기 public repo를 가리켜야 한다(이 repo는 private)."
+            )
+        source: dict[str, Any] = {
+            "source": "git-subdir" if market.get("path") else "url",
+            "url": repo_url,
+        }
+        if market.get("path"):
+            source["path"] = market["path"]
+        if market.get("ref"):
+            source["ref"] = market["ref"]
+        if market.get("sha"):
+            source["sha"] = market["sha"]
+        else:
+            unpinned.append(pack.name)
+
         plugins.append(
             {
                 "name": market.get("name") or pack.name.removesuffix(".agent"),
                 "description": market.get("description")
                 or (manifest.get("description") or "").strip().replace("\n", " "),
-                "source": f"./packs/{pack.name}",
+                "source": source,
                 "category": market.get("category", "productivity"),
                 "tags": list(market.get("tags") or []),
             }
         )
 
     doc = {
-        "name": "schift-packs",
-        "description": "Schift agent packs — RAG-native agents for Claude Code. "
-        "Execution and grounding via Schift Cloud (API key required).",
+        "name": "agent-package",
+        "description": "Agent Package — sealed, RAG-native agent packs. "
+        "Grounding and execution via Schift Cloud (API key required).",
         "owner": {"name": "Schift", "url": "https://github.com/schift-io"},
         "plugins": plugins,
     }
@@ -173,6 +211,9 @@ def cmd_market(args: argparse.Namespace) -> int:
     if skipped:
         # 조용한 누락 금지: 무엇이 왜 빠졌는지 항상 말한다.
         print(f"  not published ({len(skipped)}, no marketplace.publish): {', '.join(skipped)}")
+    if unpinned:
+        # ref만 있고 sha가 없으면 설치 시점마다 내용이 달라질 수 있다 — 재현 불가.
+        print(f"  ⚠ unpinned (no sha, not reproducible): {', '.join(unpinned)}")
     return 0
 
 

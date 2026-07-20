@@ -1,6 +1,6 @@
 {
-  "name": "schift-packs",
-  "description": "Schift agent packs — RAG-native agents for Claude Code. Execution and grounding via Schift Cloud (API key required).",
+  "name": "agent-package",
+  "description": "Agent Package — sealed, RAG-native agent packs. Grounding and execution via Schift Cloud (API key required).",
   "owner": {
     "name": "Schift",
     "url": "https://github.com/schift-io"
