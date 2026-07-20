@@ -925,9 +925,9 @@
     ],
     "source_pack": {
       "file_support_note": "website-crawler source-documents and local upload-folder script support pdf, hwpx, html, txt, and markdown. The current source-rag async adapter still crawls URLs only unless file artifacts are uploaded through the source-document path.",
-      "fixture_path": "resources/fixtures/startup-support",
+      "fixture_path": "fixtures",
       "id": "k-startup-support",
-      "source_registry": "resources/fixtures/startup-support/sources.json",
+      "source_registry": "fixtures/sources.json",
       "supports_uploaded_files": true,
       "supports_web_pages": true
     },
@@ -948,7 +948,7 @@
         "name": "calendar_create_event"
       }
     ],
-    "version": "0.1.4",
+    "version": "0.1.5",
     "visibility": "public"
   },
   "markdown_artifact_title": "지원사업 큐레이션 및 사업계획서 초안.md",
@@ -957,7 +957,7 @@
   "min_auth_level": "",
   "name": "schift-startup-support-agent",
   "non_runnable_agent_ids": [],
-  "package_ref": "schift-startup-support-agent@0.1.4",
+  "package_ref": "schift-startup-support-agent@0.1.5",
   "pipeline": "fanout",
   "primary_skill_id": "schift/skills/startup-support-curator",
   "qc_enabled": true,
@@ -1358,6 +1358,6 @@
   ],
   "variant_keywords": [],
   "variants": {},
-  "version": "0.1.4",
+  "version": "0.1.5",
   "visual_assets_enabled": false
 }

@@ -1,5 +1,5 @@
 name: schift-startup-support-agent
-version: 0.1.4
+version: 0.1.5
 description: K-Startup/기업마당/창업진흥원/중소벤처기업부 지원사업 공고와 사용자 회사 자료를 근거로, 오늘 지원할 사업 1건을 고정하고 마감 일정·사업계획서 초안을 만드는 지원사업 APM.
 extends: ../runtime.yml
 
@@ -37,8 +37,8 @@ tools:
   - name: calendar_create_event
 source_pack:
   id: k-startup-support
-  fixture_path: resources/fixtures/startup-support
-  source_registry: resources/fixtures/startup-support/sources.json
+  fixture_path: fixtures
+  source_registry: fixtures/sources.json
   supports_web_pages: true
   supports_uploaded_files: true
   file_support_note: website-crawler source-documents and local upload-folder script support pdf, hwpx, html, txt, and markdown. The current source-rag async adapter still crawls URLs only unless file artifacts are uploaded through the source-document path.
@@ -955,7 +955,7 @@ artifacts:
   html_artifact_title: 지원사업 큐레이션 및 사업계획서 초안.html
   visual_assets_enabled: false
   html_renderer: submission
-  package_ref: schift-startup-support-agent@0.1.4
+  package_ref: schift-startup-support-agent@0.1.5
   html_output:
     enabled: true
     primary: true

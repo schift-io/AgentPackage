@@ -1,0 +1,83 @@
+[
+  {
+    "id": "kstartup-main",
+    "title": "K-Startup 창업지원포털",
+    "url": "https://www.k-startup.go.kr/web",
+    "kind": "html",
+    "owner": "중소벤처기업부/창업진흥원",
+    "notes": "Portal entry point only. Do not treat as a current notice."
+  },
+  {
+    "id": "kstartup-integrated-2026",
+    "title": "2026년 창업지원사업 통합공고",
+    "url": "https://www.k-startup.go.kr/web/contents/webFSBIPBANC.do",
+    "kind": "html",
+    "owner": "K-Startup",
+    "notes": "Use as source discovery, then ingest current attached notices."
+  },
+  {
+    "id": "kstartup-ongoing-notices",
+    "title": "K-Startup 사업공고",
+    "url": "https://www.k-startup.go.kr/web/contents/bizpbanc-ongoing.do",
+    "kind": "html",
+    "owner": "K-Startup",
+    "notes": "Live listing page. Fetch close to demo time."
+  },
+  {
+    "id": "kised-pre-startup-package",
+    "title": "예비창업패키지",
+    "url": "https://www.kised.or.kr/menu.es?mid=a10205010000",
+    "kind": "html",
+    "owner": "창업진흥원",
+    "notes": "Program profile, not the live 모집공고."
+  },
+  {
+    "id": "kised-early-startup-package",
+    "title": "초기창업패키지",
+    "url": "https://www.kised.or.kr/menu.es?mid=a10205020000",
+    "kind": "html",
+    "owner": "창업진흥원",
+    "notes": "Program profile, not the live 모집공고."
+  },
+  {
+    "id": "kised-scaleup-package",
+    "title": "창업도약패키지",
+    "url": "https://www.kised.or.kr/menu.es?mid=a10205030000",
+    "kind": "html",
+    "owner": "창업진흥원",
+    "notes": "Program profile, not the live 모집공고."
+  },
+  {
+    "id": "kised-tips",
+    "title": "민관공동창업자발굴육성(TIPS)",
+    "url": "https://www.kised.or.kr/menu.es?mid=a10205040000",
+    "kind": "html",
+    "owner": "창업진흥원",
+    "notes": "Program profile. Requires current notice for deadlines."
+  },
+  {
+    "id": "kised-startup-centered-university",
+    "title": "창업중심대학",
+    "url": "https://www.kised.or.kr/menu.es?mid=a10205150000",
+    "kind": "html",
+    "owner": "창업진흥원",
+    "notes": "Program profile. Requires current notice for deadlines."
+  },
+  {
+    "id": "bizinfo-rechallenge-2026-supplement",
+    "title": "2026년 재도전성공패키지(추경) 모집 공고",
+    "url": "https://www.bizinfo.go.kr/sii/siia/selectSIIA200Detail.do?pblancId=PBLN_000000000120987",
+    "kind": "html",
+    "owner": "기업마당/창업진흥원",
+    "notes": "Example live notice page; fetch attachments manually if needed."
+  },
+  {
+    "id": "semas-main",
+    "title": "소상공인시장진흥공단",
+    "url": "https://www.semas.or.kr/web/main/index.kmdc",
+    "kind": "html",
+    "owner": "소상공인시장진흥공단",
+    "notes": "Small-business support portal entry point."
+  }
+]
+
