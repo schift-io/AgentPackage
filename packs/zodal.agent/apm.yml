@@ -1,6 +1,6 @@
 name: schift-zodal-agent
 display_name: "Schift Zodal Bid Advisor Agent"
-version: 0.1.4
+version: 0.1.5
 description: 나라장터/조달청 입찰 공고를 입찰자 관점으로 검토해 RFP 요구사항 추적표, 회사 근거 기반 why-us, 제안서 본문, Gantt, 업무분장/RACI, 추정 투찰가를 포함한 제출 검토용 제안서를 작성하는 에이전트 (베타, 비보장).
 extends: ../runtime.yml
 
@@ -672,7 +672,7 @@ artifacts:
   html_artifact_title: 조달 입찰 대응 검토본.html
   visual_assets_enabled: false
   html_renderer: submission
-  package_ref: schift-zodal-agent@0.1.4
+  package_ref: schift-zodal-agent@0.1.5
 
 hub:
   label: 조달 입찰 대응 에이전트

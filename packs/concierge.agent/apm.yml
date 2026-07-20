@@ -1,5 +1,5 @@
 name: schift-concierge-agent
-version: 0.1.2
+version: 0.1.3
 description: >
   Schift Concierge — schift.io 랜딩의 공개 위젯 두뇌(베타). 익명 방문자를 안내한다:
   공개 문서(schift-public-docs) 근거로 pre-sales 질문에 답하고, 관심을 자격판별하고,

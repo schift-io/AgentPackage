@@ -810,7 +810,7 @@
         "runtime": "schift-memory"
       }
     ],
-    "version": "0.1.4",
+    "version": "0.1.5",
     "visibility": "public"
   },
   "markdown_artifact_title": "조달 입찰 대응 검토본.md",
@@ -833,7 +833,7 @@
   "name": "Schift Zodal Bid Advisor Agent",
   "non_runnable_agent_ids": [],
   "owner_org_id": "",
-  "package_ref": "schift-zodal-agent@0.1.4",
+  "package_ref": "schift-zodal-agent@0.1.5",
   "pipeline": "fanout",
   "primary_skill_id": "schift/skills/zodal-bid-advisor",
   "qc_enabled": true,
