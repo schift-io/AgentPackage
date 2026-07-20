@@ -118,3 +118,9 @@ runtime_boundary:
     - shot_grammar_policy
     - movement_policy
     - billing_metering_policy
+
+tools:
+  - name: generate_image
+    description: >-
+      Threads 파트용 이미지를 생성한다. args: prompt(필수), role?,
+      size?(1536x1024 권장), ref_images?[]. 반환 JSON에 url이 포함된다.

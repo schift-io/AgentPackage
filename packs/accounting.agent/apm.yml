@@ -7,6 +7,12 @@ extends: ../runtime.yml
 pipeline: fanout
 access_scope: org  # owner_org_id=org_room821
 
+knowledge:
+  bucket_id: 647c1154c4494679ad345ef1f227f681
+  bucket_name: accounting-kr-tax-reference
+  bucket_role: accounting_reference
+  retrieval_required: false
+
 agents:
   - id: room821/accounting.agent/agent.md
     path: apm/accounting.agent/agent.md

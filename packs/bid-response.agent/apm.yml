@@ -125,3 +125,8 @@ scaffold_status:
   faithfulness_gate_wired: true  # 결정적 검사(apply_gate)가 post-react-run으로 배선됨
                                  # (bid_response_faithfulness.py). LLM 판정(judge_fn)은 여전히
                                  # 미배선 — text_generation_connector 블로커, fail-closed로 동작.
+
+tools:
+  - name: rag_search
+    description: >-
+      Search the agent's knowledge bucket and the user's connected apps (Notion, Gmail, Google Drive) through Schift. Prefer this for any factual question about company docs or connected work apps. Pass a natural-language query; results are labeled by source.
