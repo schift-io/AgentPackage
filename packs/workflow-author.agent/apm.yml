@@ -1,5 +1,5 @@
 name: schift-workflow-author-agent
-version: 0.1.0
+version: 0.1.1
 description: >-
   워크플로우 저작 APM. 콘솔 "말로 만들기/다듬기"의 그래프 저작 정책(프롬프트
   규칙·revision 계약)의 단일 정본. 블록 카탈로그는 호스트(schift-api manifest
@@ -13,6 +13,12 @@ access_scope: public  # 모든 org의 스튜디오가 schift-api 경유로 사�
                       # 최상위 폭(any org)이라 "public"이 정확한 값. "platform"은 화이트리스트에
                       # 없던 임의값(eb86dc3) — 소유권(platform vs org-owned) 축과 이 필드의
                       # 접근범위 축을 혼동한 표기였을 뿐, 의미(전 org 사용)는 동일하게 보존.
+
+# 레지스트리 ref ACL — 워크플로우를 만들어 주는 팩이라 **모든 org 가 분양받아야**
+# 한다(콘솔 '말로 만들기'의 저작 정책 정본). visibility=발견, 실행은
+# allowed_orgs 가 별도 게이트한다.
+visibility: public
+owner_org: org_room821
 
 agents:
   - id: schift/workflow-author.agent/agent.md

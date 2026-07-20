@@ -1,5 +1,5 @@
 name: room821-bid-response-agent
-version: 0.1.0
+version: 0.1.2
 description: >-
   Room821 조달·입찰 응찰 패키지 에이전트 (베타, 스캐폴딩만 — 미배선/미등록).
   나라장터 공고 RFP ingest → 요구사항·평가표 구조화 → tenant core memory 회사
@@ -7,6 +7,13 @@ description: >-
   채움 → markdown→HWPX 패키징 → 런 리포트(처리시간·토큰·cr 비용·placeholder 잔여).
   노트북 지그 실측("RFP→응찰 패키지 HWPX 13개, 12분", `PROOF.md`) 포팅.
 extends: ../runtime.yml
+
+# 레지스트리 ref ACL — 미선언이면 서버 기본 private + owner 없음이라
+# 어떤 org 도 목록에서 못 본다(2026-07-20 실측: 라이브 ref 25개 전부 그 상태).
+# visibility=발견 권한, 실행은 allowed_orgs 가 별도 게이트한다
+# (apm_ref_visible / apm_ref_executable 분리) — public 이어도 실행은 계약 org 만.
+visibility: public
+owner_org: org_room821
 # telegram-agent-router-orchestrator.md §5 Phase 0 관례를 따름(선언적 pipeline).
 # 이 팩은 등록/배포 전 스캐폴딩 단계 — SCAFFOLD.md의 GO 없이 활성화하지 않는다.
 pipeline: react

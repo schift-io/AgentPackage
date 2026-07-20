@@ -1,10 +1,17 @@
 name: room821-higgsfield-agent
-version: 0.1.1
+version: 0.1.3
 description: >-
   연출 전용 APM. 오픈 연출 버킷(higgsfield-directing)에서 샷 문법·광원·카메라워크·
   무브먼트·앵커 템플릿을 끌어와, txt2img로 스토리보드 grid 초안을 만들고 승인된
   패널만 imgs2vid로 짧게 클립화해 이어 붙인다. [txt2img] storyboard+movement [imgs2vid].
 extends: ../runtime.yml
+
+# 레지스트리 ref ACL — 미선언이면 서버 기본 private + owner 없음이라
+# 어떤 org 도 목록에서 못 본다(2026-07-20 실측: 라이브 ref 25개 전부 그 상태).
+# visibility=발견 권한, 실행은 allowed_orgs 가 별도 게이트한다
+# (apm_ref_visible / apm_ref_executable 분리) — public 이어도 실행은 계약 org 만.
+visibility: public
+owner_org: org_room821
 # telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
 # 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=True, sub_agent_plan=[])과 바이트 동일.
 pipeline: react

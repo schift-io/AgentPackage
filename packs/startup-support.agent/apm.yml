@@ -1,7 +1,14 @@
 name: schift-startup-support-agent
-version: 0.1.0
+version: 0.1.2
 description: K-Startup/기업마당/창업진흥원/중소벤처기업부 지원사업 공고와 사용자 회사 자료를 근거로, 오늘 지원할 사업 1건을 고정하고 마감 일정·사업계획서 초안을 만드는 지원사업 APM.
 extends: ../runtime.yml
+
+# 레지스트리 ref ACL — 미선언이면 서버 기본 private + owner 없음이라
+# 어떤 org 도 목록에서 못 본다(2026-07-20 실측: 라이브 ref 25개 전부 그 상태).
+# visibility=발견 권한, 실행은 allowed_orgs 가 별도 게이트한다
+# (apm_ref_visible / apm_ref_executable 분리) — public 이어도 실행은 계약 org 만.
+visibility: public
+owner_org: org_room821
 qc_enabled: true
 # telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
 # 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=True지만 runnable
@@ -948,7 +955,7 @@ artifacts:
   html_artifact_title: 지원사업 큐레이션 및 사업계획서 초안.html
   visual_assets_enabled: false
   html_renderer: submission
-  package_ref: schift-startup-support-agent@0.1.0
+  package_ref: schift-startup-support-agent@0.1.2
   html_output:
     enabled: true
     primary: true

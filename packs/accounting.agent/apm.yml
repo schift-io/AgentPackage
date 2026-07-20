@@ -1,7 +1,16 @@
 name: room821-accounting-agent
-version: 0.1.0
+version: 0.1.4
 description: Room821 accounting (경리) agent package (베타). 경리 실무를 8개 variant로 소유 — 증빙→지출결의서, 거래내역→장부·세무·경영 리포트, 부가세 신고 준비, 원천세·급여, 매입→지급(미지급금), 미수금 관리, 근태·연차, 월마감·세무 캘린더. 회계 기준(적격증빙·계정과목·부가세 매입공제)에 맞춰 만들고, 신고·발행·지급·마감 자체는 홈택스/세무·노무 대리인/Bolta 핸드오프로 둔다.
 extends: ../runtime.yml
+
+# 레지스트리 ref ACL — 미선언이면 서버 기본 private + owner 없음이라
+# 어떤 org 도 목록에서 못 본다(2026-07-20 실측: 라이브 ref 25개 전부 그 상태).
+# visibility=발견 권한. corporate 는 '인증된 아무 org'를 뜻하므로
+# (apm_ref_visible: corporate -> bool(org_id)) 우리 전용 팩에는 부적합하다.
+# private 은 owner_org + allowed_orgs 만 본다. 실행도 그 둘이 게이트한다
+# (apm_ref_visible / apm_ref_executable 분리) — public 이어도 실행은 계약 org 만.
+visibility: public
+owner_org: org_room821
 # telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
 # 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=False)과 바이트 동일.
 pipeline: fanout

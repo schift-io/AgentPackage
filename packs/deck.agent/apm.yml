@@ -1,7 +1,14 @@
 name: room821-deck-agent
-version: 0.1.0
-description: Room821 presentation-deck (IR 장표) agent package. Schift IR 17-slide frame.
+version: 0.1.2
+description: Presentation-deck (IR 장표) agent package. 17-slide IR frame.
 extends: ../runtime.yml
+
+# 레지스트리 ref ACL — 미선언이면 서버 기본 private + owner 없음이라
+# 어떤 org 도 목록에서 못 본다(2026-07-20 실측: 라이브 ref 25개 전부 그 상태).
+# visibility=발견 권한, 실행은 allowed_orgs 가 별도 게이트한다
+# (apm_ref_visible / apm_ref_executable 분리) — public 이어도 실행은 계약 org 만.
+visibility: public
+owner_org: org_room821
 # telegram-agent-router-orchestrator.md §5 Phase 0 — 선언적 pipeline(무동작 변경).
 # 값은 agentic_run_service.execute_agentic_run의 오늘 추론(has_tools=False)과 바이트 동일.
 pipeline: fanout
