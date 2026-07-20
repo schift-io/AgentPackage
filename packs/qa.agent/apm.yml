@@ -1,0 +1,44 @@
+name: schift-qa-agent
+display_name: "Schift QA Agent"
+version: 0.1.0
+description: >-
+  묻는 말에 근거를 대고 답하는 기본 에이전트. 산출물을 만들지 않고 조직 지식 ->
+  연결 소스 -> 웹 순서로 찾아 답한다. MCP 로 붙는 도구가 늘어날수록 답할 수 있는
+  범위가 넓어지는 구조라, ability 를 붙여 쓰는 기본 봇 자리다.
+
+# 검색만 하는 단발 대화형이라 ReAct. 문서 팬아웃이 아니다.
+pipeline: react
+access_scope: org
+
+# 카탈로그에 보여야 다른 org 가 붙일 수 있다. 실행 허용은 ref-레벨 ACL 이 따로 판단한다.
+visibility: public
+owner_org: org_room821
+
+agents:
+  - id: schift/qa.agent/agent.md
+    path: apm/qa.agent/agent.md
+
+skills:
+  - id: schift/skills/knowledge-qa
+    path: apm/qa.agent/skills/knowledge-qa/SKILL.md
+  - id: room821/skills/schift-memory
+    runtime: schift-memory
+
+# 기본 도구는 검색 3종만 둔다. 나머지 능력은 **ability 바인딩(DB)** 으로 붙인다 —
+# 팩에 박으면 org 마다 다르게 줄 수 없고, 바꿀 때마다 재발행해야 한다.
+tools:
+  - name: rag_search
+    description: "조직 지식(버킷) 검색. 조직 내부 질문은 여기부터 찾는다."
+  - name: connected_source_search
+    description: "조직이 연결한 외부 소스(노션·드라이브 등) 검색."
+  - name: connected_source_fetch
+    description: "connected_source_search 로 찾은 문서의 본문을 가져온다."
+  - name: web_search
+    description: "웹 검색. 최신·외부 사실이 필요할 때만 쓴다."
+
+hub:
+  label: "QA"
+  role: "묻는 말에 근거를 대고 답한다"
+  inputs:
+    - "질문"
+  output: "근거가 붙은 답변"
