@@ -6,6 +6,14 @@
 능력을 스스로 선언한다. 같은 팩이 **Schift Cloud와 로컬 Claude Code/Codex 양쪽에서**
 돈다.
 
+> **규범적 사양은 [`SPEC.md`](SPEC.md)** — 컨테이너 바이트 레이아웃 · content-hash
+> 산출식 · 능력 계약 · 발행 게이트 · 버전 판정. 이 README 는 *왜* 를 논증하고,
+> SPEC 은 *무엇이 참인가* 를 정의한다. 라이선스 Apache-2.0([`LICENSE`](LICENSE)).
+>
+> ⚠️ 이름 충돌: 여기서 APM 은 **Agent Package**(봉인 아티팩트 포맷)이고,
+> `microsoft/apm`("Agent Package Manager", npm 식 의존성 관리자)과 **무관하다** —
+> 코드·스키마 어느 쪽도 참조하지 않는다.
+
 ---
 
 ## 왜 그냥 "스킬"이 아닌가
