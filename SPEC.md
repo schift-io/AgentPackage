@@ -179,8 +179,12 @@ $ apm-kit check image-gen.agent --host local-byo
   가능)에서 읽는다 — 정체성을 leak 으로부터 막는 코드 자체가 정체성을 담고 있으면
   분리 의미가 없기 때문. 이 kit 을 이 repo 밖으로 떼어낼 때는 이 파일을 안 가져가거나
   `--identity-patterns /dev/null` 처럼 빈 경로를 지정하면 스캔이 비활성화되고, 그 사실을
-  명시적으로 출력한다(조용히 건너뛰지 않는다). 현재(이 repo 기준) 루트 `identity-patterns.json`
-  의 내용: `Room 821` · `room821` · `#FF4D00` · `kimbyun`.
+  명시적으로 출력한다(조용히 건너뛰지 않는다).
+  형식은 `{"patterns": [{"pattern": "<정규식>", "label": "<사람이 읽는 이름>"}]}`.
+  ⚠️ **여기에 실제 패턴 값을 옮겨 적지 않는다.** 이 문서는 kit 과 함께 배포되므로,
+  값을 나열하는 순간 파일을 `kit/` 밖으로 뺀 의미가 사라진다 — 실제로 이 문단이
+  한 번 그 실수를 했다. 값을 보려면 운영 중인 repo 의 `identity-patterns.json` 을
+  직접 열어라.
 - **소스 위치:** 마켓플레이스 항목의 `source` 는 이 repo 안 상대경로가 아니라 **각 팩의
   공개 repo** 를 가리킨다. 이 repo 는 private 이고 내부 팩을 담고 있어서, 마켓플레이스로
   쓰려고 public 으로 뒤집으면 그 소스가 통째로 노출된다 — `marketplace.json` 은 *목록에
