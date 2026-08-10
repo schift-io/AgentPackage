@@ -100,6 +100,33 @@ def _load_identity_patterns(path: Path) -> list[tuple[str, str]]:
     return [(str(p["pattern"]), str(p["label"])) for p in patterns]
 
 
+def _manifest_of(pack: Path) -> dict[str, Any]:
+    """SPEC §5 의 정본 판정 순서. `pack.json` 이 있으면 그대로, 없으면 `apm.yml` 파생.
+
+    `pack.json` 을 파생 없이 그대로 쓰기 때문에 **누가 빌드하든 같은 매니페스트**가
+    나오고, 따라서 소비자와 hash 가 자동으로 맞는다.
+    """
+    pack_json = pack / "pack.json"
+    if pack_json.is_file():
+        manifest = json.loads(pack_json.read_text(encoding="utf-8"))
+        if not isinstance(manifest, dict):
+            sys.exit(f"{pack.name}: pack.json 이 JSON 객체가 아니다")
+    else:
+        manifest = dict(_load_yaml(pack / "apm.yml"))
+    if not manifest:
+        return {}
+    manifest.setdefault("agent_id", pack.name.removesuffix(".agent"))
+    return manifest
+
+
+def _version_of(manifest: dict[str, Any]) -> str:
+    """SPEC §8 — 버전을 가르는 값은 `package_ref` 의 `@` 뒤. top-level 은 폴백."""
+    ref = str(manifest.get("package_ref") or "")
+    if "@" in ref:
+        return ref.rsplit("@", 1)[1]
+    return str(manifest.get("version") or "0.0.0")
+
+
 def _required_caps(pack: Path) -> set[str]:
     boundary = _load_yaml(pack / "apm.yml").get("runtime_boundary") or {}
     declared = boundary.get("host_services_only") or []
@@ -260,12 +287,15 @@ def cmd_market(args: argparse.Namespace) -> int:
 
 
 def cmd_build(args: argparse.Namespace) -> int:
-    """팩 디렉토리 → `.apm` 아티팩트. **apm.yml 이 단일 정본이다.**
+    """팩 디렉토리 → `.apm` 아티팩트. **매니페스트 정본은 SPEC §5 의 판정 순서를 따른다.**
 
-    agent-hub 의 `build_pack_apm` 은 매니페스트를 **코드**(`AGENT_PACKS`)에서 만든다.
-    그래서 오늘은 두 빌드의 hash 가 다르다 — 그 차이가 곧 이중 선언 부채(S1)이며,
-    `manifest_overrides` 를 폐기하고 apm.yml 파생으로 수렴시키면 사라진다.
-    이 명령은 **수렴 후의 정답 형태**를 미리 구현해 둔 것이다.
+    1. `pack.json` 이 있으면 **그대로** 매니페스트로 쓴다(파생 없음).
+    2. 없으면 `apm.yml` 에서 파생한다.
+
+    ⚠️ 이 순서를 안 지키면 **소비자와 hash 가 구조적으로 갈린다.** 2026-08-10 실측:
+    apm.yml 로만 빌드하던 시절 agent-hub 와 8/8 팩이 전부 달랐고, `pack.json` 을
+    쓰도록 고치자 일치했다. 팩 36/36 이 `pack.json` 을 갖고 있으므로 실질적으로는
+    항상 1번 경로다. `apm.yml` 은 **저작 포맷**이지 정본이 아니다(§5).
     """
     from apm_codec import build_apm_bundle
 
@@ -273,13 +303,11 @@ def cmd_build(args: argparse.Namespace) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     rc = 0
     for pack in _pack_dirs(args.pack, Path(args.packs_dir)):
-        manifest = _load_yaml(pack / "apm.yml")
+        manifest = _manifest_of(pack)
         if not manifest:
-            print(f"✗  {pack.name}: apm.yml missing/empty")
+            print(f"✗  {pack.name}: pack.json/apm.yml missing or empty")
             rc = 1
             continue
-        manifest = dict(manifest)
-        manifest.setdefault("agent_id", pack.name.removesuffix(".agent"))
 
         files: dict[str, bytes] = {}
         for path in sorted(pack.rglob("*")):
@@ -287,7 +315,7 @@ def cmd_build(args: argparse.Namespace) -> int:
                 files[str(path.relative_to(pack))] = path.read_bytes()
 
         blob, chash = build_apm_bundle(manifest, files)
-        target = out_dir / f"{manifest['agent_id']}-{manifest.get('version', '0.0.0')}.apm"
+        target = out_dir / f"{manifest['agent_id']}-{_version_of(manifest)}.apm"
         target.write_bytes(blob)
         print(
             f"✓  {pack.name}: {len(files)} files, {len(blob)} bytes, "

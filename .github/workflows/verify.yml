@@ -58,3 +58,31 @@ jobs:
           name: apm-artifacts
           path: dist/*.apm
           retention-days: 14
+
+      # SPEC §5 — pack.json 이 있으면 그게 매니페스트다. kit 이 이걸 어기면 소비자와
+      # hash 가 구조적으로 갈린다(2026-08-10: 어기던 동안 8/8 팩이 전부 달랐다).
+      - name: 매니페스트 정본 판정 (SPEC §5)
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          from pathlib import Path
+          sys.path.insert(0, "kit")
+          import apm_kit
+
+          checked = mismatched = 0
+          for pack in sorted(Path("packs").glob("*.agent")):
+              pack_json = pack / "pack.json"
+              if not pack_json.is_file():
+                  continue
+              checked += 1
+              expected = json.loads(pack_json.read_text(encoding="utf-8"))
+              expected.setdefault("agent_id", pack.name.removesuffix(".agent"))
+              if apm_kit._manifest_of(pack) != expected:
+                  print(f"✗ {pack.name}: build 가 pack.json 을 그대로 쓰지 않는다")
+                  mismatched += 1
+          if not checked:
+              print("✗ pack.json 을 가진 팩이 0개 — 이 게이트가 아무것도 안 지키고 있다")
+              sys.exit(1)
+          print(f"✓ {checked}개 팩이 pack.json 을 정본으로 쓴다")
+          sys.exit(1 if mismatched else 0)
+          PY

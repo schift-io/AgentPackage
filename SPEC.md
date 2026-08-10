@@ -223,13 +223,13 @@ $ apm-kit check image-gen.agent --host local-byo
    `kit/apm_codec.py` 를 import 하는 것.
 2. **능력 어휘도 사본이 둘이다.** 소비자 측 `host_capabilities.py` 를 이 파일을 읽도록
    수렴시킨다.
-3. **매니페스트 이중 선언 — 이것이 자동 발행을 막고 있는 진짜 부채.** kit 은
-   `apm.yml` 에서 파생하고 agent-hub 는 코드(`AGENT_PACKS`)에서 만든다. 같은 팩·같은
-   버전에 **다른 매니페스트 → 다른 hash** 라, 두 발행자가 동시에 붙으면 매번 409 이거나
-   서로 덮어쓴다. `manifest_overrides` 폐기 + `pack.json` 단일화로 수렴한다(§5 의 정본
-   판정 순서가 이미 그 방향이다 — `pack.json` 이 있으면 파생을 안 거치므로 hash 가
-   자동으로 맞는다). 수렴 전까지 `.github/workflows/publish.yml` 의 자동 발행은 켜지
-   않으며, 켤 때 **발행 주체를 하나로 확정**해야 한다.
+3. **~~매니페스트 이중 선언~~ — 2026-08-10 해소.** 원인은 "선언이 둘"이 아니라
+   **참조 구현이 자기 사양을 안 지킨 것**이었다. kit 의 `build` 가 `apm.yml` 만 읽고
+   §5 의 정본 판정 순서(`pack.json` 우선)를 건너뛰었다. 팩 36/36 이 `pack.json` 을
+   갖고 있어서, 고치자 agent-hub 와 **36/36 hash 일치**했다(고치기 전 8/8 불일치).
+   `.github/workflows/verify.yml` 이 이 판정을 잠근다.
+   ⚠️ 남은 것은 **발행 주체 단일화** — 이 repo 의 워크플로냐 agent-hub 배포
+   reconcile 이냐. 둘 다 켜면 hash 가 같아도 경합한다.
 4. **봉투를 OCI artifact 로 바꾸는 선택지가 열려 있다.** 지금은 tar.gz + canonical JSON +
    자체 해시를 직접 정의했다(§3·§4). OCI artifact 로 실으면 content-addressable digest 는
    같은 개념이면서 **레지스트리 프로토콜과 cosign/sigstore 서명이 딸려온다** — 5번이 공짜로
