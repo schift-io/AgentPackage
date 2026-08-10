@@ -201,13 +201,25 @@ $ apm-kit check image-gen.agent --host local-byo
 
 ## 9. 알려진 부채 / 미정
 
+> ⚠️ **부채 1과 3의 경중을 헷갈리지 말 것.** 두 빌더가 같은 버전에 서로 다른
+> content-hash 를 내는 **실제 원인은 3(매니페스트 생성 경로가 둘)이지 1(코덱 사본)이
+> 아니다.** 실측: `zodal@0.1.4` → kit `4e675c7eec05` / agent-hub `a38ae237b866`.
+> 코덱은 이미 일치하며 테스트로 잠겨 있다. **자동 발행을 켜는 선행 조건은 3이다.**
+
 1. **코덱 사본이 둘이다.** 소비자(agent-hub) 측에 `apm_package.py` 사본이 있다. 현재
-   `HASH_EXCLUDED_KEYS` 는 21개로 일치하지만, **한쪽만 바꾸면 조용히 갈린다.** 수렴
-   방향은 소비자가 `kit/apm_codec.py` 를 import 하는 것.
+   `HASH_EXCLUDED_KEYS` 는 21개로 일치하며, 갈리면 빨개지도록 잠가 뒀다 — 골든 해시·
+   골든 번들 바이트·결정성·제외키 목록·크로스 repo 대조
+   (`services/agent-hub/tests/test_apm_hash_golden.py`). 수렴 방향은 소비자가
+   `kit/apm_codec.py` 를 import 하는 것.
 2. **능력 어휘도 사본이 둘이다.** 소비자 측 `host_capabilities.py` 를 이 파일을 읽도록
    수렴시킨다.
-3. **매니페스트 이중 선언.** `apm.yml` 파생 빌드와 `pack.json` 정본 빌드가 공존한다.
-   `manifest_overrides` 폐기 + `pack.json` 단일화로 수렴한다.
+3. **매니페스트 이중 선언 — 이것이 자동 발행을 막고 있는 진짜 부채.** kit 은
+   `apm.yml` 에서 파생하고 agent-hub 는 코드(`AGENT_PACKS`)에서 만든다. 같은 팩·같은
+   버전에 **다른 매니페스트 → 다른 hash** 라, 두 발행자가 동시에 붙으면 매번 409 이거나
+   서로 덮어쓴다. `manifest_overrides` 폐기 + `pack.json` 단일화로 수렴한다(§5 의 정본
+   판정 순서가 이미 그 방향이다 — `pack.json` 이 있으면 파생을 안 거치므로 hash 가
+   자동으로 맞는다). 수렴 전까지 `.github/workflows/publish.yml` 의 자동 발행은 켜지
+   않으며, 켤 때 **발행 주체를 하나로 확정**해야 한다.
 4. **서명이 없다.** content-hash 는 **변조를 잡지만 출처를 증명하지 못한다.** 자사
    배포에서 hash 는 주로 위생이며, 제3자 팩을 받기 시작하는 순간 서명이 함께 필요하다.
    그 전까지 런타임 설치본 실행(`SCHIFT_PACK_INSTALL`)은 켜지 않는다.
