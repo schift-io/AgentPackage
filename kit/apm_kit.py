@@ -39,6 +39,19 @@ VOCAB: set[str] = set(CAPS["capabilities"])
 CLOUD_ONLY: set[str] = set(CAPS["cloud_only"])
 
 
+def _display_path(path: Path) -> str:
+    """레포 밖 경로도 죽지 않고 출력한다.
+
+    `--out`/`--packs-dir` 이 레포 밖(또는 상대경로)을 가리키면 `relative_to(REPO_ROOT)`
+    가 ValueError 로 죽는다 — **빌드는 이미 성공했는데 출력 한 줄 때문에 exit 1** 이
+    되어 CI 가 실패로 읽는다. 레포 안이면 짧게, 밖이면 절대경로 그대로.
+    """
+    try:
+        return str(path.resolve().relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path.resolve())
+
+
 def _load_yaml(path: Path) -> dict[str, Any]:
     try:
         import yaml
@@ -234,7 +247,7 @@ def cmd_market(args: argparse.Namespace) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
-    print(f"wrote {out.relative_to(REPO_ROOT)} — {len(plugins)} published")
+    print(f"wrote {_display_path(out)} — {len(plugins)} published")
     if skipped:
         # 조용한 누락 금지: 무엇이 왜 빠졌는지 항상 말한다.
         print(f"  not published ({len(skipped)}, no marketplace.publish): {', '.join(skipped)}")
@@ -276,7 +289,7 @@ def cmd_build(args: argparse.Namespace) -> int:
         target.write_bytes(blob)
         print(
             f"✓  {pack.name}: {len(files)} files, {len(blob)} bytes, "
-            f"hash {chash[:16]}… → {target.relative_to(REPO_ROOT)}"
+            f"hash {chash[:16]}… → {_display_path(target)}"
         )
     return rc
 
