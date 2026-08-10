@@ -261,8 +261,11 @@ $ apm-kit check image-gen.agent --host local-byo
    §5 의 정본 판정 순서(`pack.json` 우선)를 건너뛰었다. 팩 36/36 이 `pack.json` 을
    갖고 있어서, 고치자 agent-hub 와 **36/36 hash 일치**했다(고치기 전 8/8 불일치).
    `.github/workflows/verify.yml` 이 이 판정을 잠근다.
-   ⚠️ 남은 것은 **발행 주체 단일화** — 이 repo 의 워크플로냐 agent-hub 배포
-   reconcile 이냐. 둘 다 켜면 hash 가 같아도 경합한다.
+   **발행 주체 = 모노레포 `./deploy.sh apm-packs`** 로 확정(2026-08-10). 이 repo 의
+   `publish.yml` 은 검증 전용이며 라이브 발행 스텝을 두지 않는다 — 자격증명 때문이
+   아니라 **여기 `packs/` 가 라이브가 아니기 때문**이다(실측: 27개 vs 라이브 36개,
+   9개 누락, 표본 5개가 전부 3 patch 뒤처짐). **hash 가 맞는 것과 내용이 최신인 것은
+   다른 문제**이고 §9-3 은 앞의 것만 고쳤다.
 4. **봉투를 OCI artifact 로 바꾸는 선택지가 열려 있다.** 지금은 tar.gz + canonical JSON +
    자체 해시를 직접 정의했다(§3·§4). OCI artifact 로 실으면 content-addressable digest 는
    같은 개념이면서 **레지스트리 프로토콜과 cosign/sigstore 서명이 딸려온다** — 5번이 공짜로
