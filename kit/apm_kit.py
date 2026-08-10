@@ -346,16 +346,42 @@ def _vendor_payload() -> tuple[str, str]:
     return VENDOR_HEADER.format(sha=sha) + "\n" + raw.decode("utf-8"), sha
 
 
+def _vendor_caps_payload() -> tuple[str, str]:
+    """(능력 어휘 JSON, 원본 sha256) — 정본 capabilities.json 에서 파생.
+
+    JSON 은 주석을 못 다니 `_vendored` 블록에 출처와 sha 를 심는다. 소비자는 이걸
+    읽어 어휘·호스트 프로필을 만들고, 코드에 이름을 **다시 적지 않는다**.
+    """
+    raw = (KIT_DIR / "capabilities.json").read_bytes()
+    sha = hashlib.sha256(raw).hexdigest()
+    doc = json.loads(raw.decode("utf-8"))
+    doc["_vendored"] = {
+        "source": "schift-io/AgentPackage kit/capabilities.json",
+        "source_sha256": sha,
+        "warning": "생성된 파일 — 직접 고치지 마라. `apm-kit vendor --check` 가 잡는다.",
+        "regenerate": "AgentPackage 에서 python3 kit/apm_kit.py vendor --dest <이 파일의 디렉터리>",
+    }
+    return json.dumps(doc, ensure_ascii=False, indent=2, sort_keys=True) + "\n", sha
+
+
 def cmd_vendor(args: argparse.Namespace) -> int:
     """정본 코덱을 소비자 repo 로 내보낸다 / 내보낸 것이 안 갈렸는지 검사한다.
 
     `--check` 는 소비자 CI 가 부르는 쪽이다. 파일이 없거나, 헤더가 없거나, 기록된
     sha 가 지금 정본과 다르거나, 본문이 손으로 수정됐으면 **exit 1**.
     """
-    payload, sha = _vendor_payload()
-    dest = Path(args.dest) / "apm_codec_vendored.py"
+    targets = [
+        (Path(args.dest) / "apm_codec_vendored.py", *_vendor_payload()),
+        (Path(args.dest) / "apm_capabilities_vendored.json", *_vendor_caps_payload()),
+    ]
+    rc = 0
+    for dest, payload, sha in targets:
+        rc |= _vendor_one(dest, payload, sha, check=args.check)
+    return rc
 
-    if args.check:
+
+def _vendor_one(dest: Path, payload: str, sha: str, *, check: bool) -> int:
+    if check:
         if not dest.is_file():
             print(f"✗  vendor 파일 없음: {_display_path(dest)}")
             return 1

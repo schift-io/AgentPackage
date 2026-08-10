@@ -152,8 +152,12 @@ intake_question  intake_options  feature_flag  hidden  owner_org_id
   없는 이름을 선언하면 lint/check 가 실패한다(오타·무단 신규 차단).
 - 호스트는 `provides: "*"` 또는 `excludes: [...]` 로 자기 능력을 선언한다.
   - `agent-hub` — `provides: "*"`
-  - `local-byo` — `excludes: usage_ledger, credit_metering, render_worker,
-    stitch_worker, connector_handoff, higgsfield_mcp`
+  - `local-byo` — `excludes: usage_ledger, credit_metering, hwpx_render_connector,
+    render_worker, stitch_worker, connector_handoff, higgsfield_mcp`
+- ⚠️ **호스트 프로필은 소비자 구현과 반드시 같아야 한다.** 갈리면 느슨한 쪽이 아니라
+  **엄격한 쪽**에 맞춘다 — 느슨한 쪽이 정본이 되면 팩 저자는 `check` 통과를 보고도
+  실제로는 못 도는 팩을 낸다(2026-08-10 실측: 어휘는 28/28 같은데 `local-byo` 만
+  `hwpx_render_connector` 를 제공한다고 잘못 적혀 있었다).
 - **판정 (규범):** `required = 선언집합`, `unknown = required − 어휘`,
   `missing = (required ∩ 어휘) − host_provides`.
   `unknown` 또는 `missing` 이 비어 있지 않으면 **거절한다.** 요구가 아예 없으면 통과.
