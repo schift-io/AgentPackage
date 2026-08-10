@@ -4,37 +4,150 @@
     "여기 없는 이름을 팩이 선언하면 kit lint 가 실패한다(오타/무단 신규 차단).",
     "이 파일이 어휘의 단일 정본이다. agent-hub 의 host_capabilities.py 는 장차 이걸 읽도록 수렴시킨다.",
     "cloud_only = 유저 머신에서 강제 불가능한 능력. 이걸 요구하는 팩은 로컬 호스트에서 fail-closed 거절된다.",
-    "⚠️ hosts 프로필은 소비자(agent-hub host_capabilities.py)와 반드시 같아야 한다. 2026-08-10 실측: 어휘는 28/28 같은데 local-byo 가 hwpx_render_connector 를 제공한다고 잘못 적혀 있어, 팩 저자가 check 를 돌리면 통과하는데 실제로는 못 도는 조합이 통과했다. 갈리면 느슨한 쪽이 아니라 **엄격한 쪽**에 맞춘다."
+    "⚠️ hosts 프로필은 소비자(agent-hub host_capabilities.py)와 반드시 같아야 한다. 2026-08-10 실측: 어휘는 28/28 같은데 local-byo 가 hwpx_render_connector 를 제공한다고 잘못 적혀 있어, 팩 저자가 check 를 돌리면 통과하는데 실제로는 못 도는 조합이 통과했다. 갈리면 느슨한 쪽이 아니라 **엄격한 쪽**에 맞춘다.",
+    "transport/metered_by 는 2026-08-10 에 **표현만** 추가했다. 오늘 전부 in_process/host 이고 런타임 동작은 안 바뀐다. 외부 능력을 열 때 포맷을 먼저 고치지 않아도 되게 자리를 미리 판 것이다 — 어휘가 닫혀 있던 이유는 각 이름이 우리 인프로세스 구현에 묶여 있어서였고, http 능력은 그 매듭을 푼다."
   ],
   "capabilities": {
-    "auth": "인증/식별",
-    "brand_bucket_rag": "브랜드 버킷 RAG 검색",
-    "session_bucket_rag": "세션 버킷 RAG 검색",
-    "directing_bucket_rag": "디렉팅 버킷 RAG 검색",
-    "tenant_core_memory_query": "테넌트 core memory 조회",
-    "text_generation_connector": "텍스트 생성 모델 호출",
-    "image_generation_connector": "이미지 생성 모델 호출",
-    "txt2img_connector": "txt2img 모델 호출",
-    "image_upscale_connector": "이미지 업스케일",
-    "image_search_connector": "이미지 검색",
-    "tts_connector": "음성 합성",
-    "bgm_asset_connector": "BGM 에셋 조회",
-    "vision_scorer": "비전 채점",
-    "multimodal_critique_scorer": "멀티모달 자가비평 채점",
-    "hwpx_render_connector": "HWPX 문서 렌더",
-    "render_worker": "렌더 워커(서버)",
-    "stitch_worker": "영상 스티치 워커(서버)",
-    "run_persistence": "런 기록 지속성",
-    "draft_persistence": "초안 지속성",
-    "note_storage": "노트 저장",
-    "source_upload_storage": "원본 업로드 저장",
-    "usage_ledger": "사용량 원장",
-    "credit_metering": "크레딧 미터링",
-    "connector_handoff": "외부 커넥터 핸드오프",
-    "higgsfield_mcp": "Higgsfield MCP 서버",
-    "block_catalog": "워크플로 블록 카탈로그",
-    "awp_provenance_minting": "AWP provenance 민팅",
-    "publish_gate": "발행 게이트"
+    "auth": {
+      "desc": "인증/식별",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "brand_bucket_rag": {
+      "desc": "브랜드 버킷 RAG 검색",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "session_bucket_rag": {
+      "desc": "세션 버킷 RAG 검색",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "directing_bucket_rag": {
+      "desc": "디렉팅 버킷 RAG 검색",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "tenant_core_memory_query": {
+      "desc": "테넌트 core memory 조회",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "text_generation_connector": {
+      "desc": "텍스트 생성 모델 호출",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "image_generation_connector": {
+      "desc": "이미지 생성 모델 호출",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "txt2img_connector": {
+      "desc": "txt2img 모델 호출",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "image_upscale_connector": {
+      "desc": "이미지 업스케일",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "image_search_connector": {
+      "desc": "이미지 검색",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "tts_connector": {
+      "desc": "음성 합성",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "bgm_asset_connector": {
+      "desc": "BGM 에셋 조회",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "vision_scorer": {
+      "desc": "비전 채점",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "multimodal_critique_scorer": {
+      "desc": "멀티모달 자가비평 채점",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "hwpx_render_connector": {
+      "desc": "HWPX 문서 렌더",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "render_worker": {
+      "desc": "렌더 워커(서버)",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "stitch_worker": {
+      "desc": "영상 스티치 워커(서버)",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "run_persistence": {
+      "desc": "런 기록 지속성",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "draft_persistence": {
+      "desc": "초안 지속성",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "note_storage": {
+      "desc": "노트 저장",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "source_upload_storage": {
+      "desc": "원본 업로드 저장",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "usage_ledger": {
+      "desc": "사용량 원장",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "credit_metering": {
+      "desc": "크레딧 미터링",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "connector_handoff": {
+      "desc": "외부 커넥터 핸드오프",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "higgsfield_mcp": {
+      "desc": "Higgsfield MCP 서버",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "block_catalog": {
+      "desc": "워크플로 블록 카탈로그",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "awp_provenance_minting": {
+      "desc": "AWP provenance 민팅",
+      "transport": "in_process",
+      "metered_by": "host"
+    },
+    "publish_gate": {
+      "desc": "발행 게이트",
+      "transport": "in_process",
+      "metered_by": "host"
+    }
   },
   "cloud_only": [
     "usage_ledger",
@@ -67,5 +180,14 @@
         "higgsfield_mcp"
       ]
     }
+  },
+  "_transport_legend": {
+    "in_process": "호스트 프로세스 안에서 실행. 오늘 28개 전부 여기.",
+    "http": "호스트 **밖**에서 실행하고 HTTP 로 호출. 외부/고객 제공 능력의 자리다. 우리 프로세스에 남의 코드가 안 들어오므로 격리가 곧 신뢰 축이다 (서명 대신 샌드박스). ⚠️ **비동기 계약이어야 한다** — 잡 핸들을 돌려주고 완료는 콜백/폴링으로 받는다. 동기로 붙들면 우리 런 슬롯이 남의 계산을 기다리며 놀고, 우리는 계산도 안 하고 대기 비용만 낸다."
+  },
+  "_metered_by_legend": {
+    "host": "우리가 제공하니 우리가 잰다.",
+    "provider": "외부가 제공하니 **우리는 안 잰다.** 우리 원가가 아닌 것을 우리 원장에 올리면 숫자가 거짓이 된다.",
+    "none": "계량 대상 아님."
   }
 }
