@@ -7,6 +7,7 @@
 명령:
   check  <pack> [--host agent-hub|local-byo]  호스트 능력 대조 (fail-closed)
   lint   <pack> [--identity-patterns PATH]     어휘·필수 필드·테넌트 정체성 스캔
+  vendor --dest <dir> [--check]                 정본 코덱 내보내기 / 갈림 검사
   market                                       .claude-plugin/marketplace.json 생성
 
 4개 서브커맨드 전부 `--packs-dir PATH`(기본: `<repo>/packs`)를 받는다 — 이 repo 밖으로
@@ -20,6 +21,7 @@ kit만 떼어낼 때 packs 위치를 지정하기 위함. 디렉터리가 없으
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -294,6 +296,68 @@ def cmd_build(args: argparse.Namespace) -> int:
     return rc
 
 
+VENDOR_HEADER = """\
+# ⚠️ 생성된 파일 — 직접 고치지 마라. 고치면 `apm-kit vendor --check` 가 빨개진다.
+#
+# 정본: schift-io/AgentPackage `kit/apm_codec.py`
+# 갱신: 그 repo 에서 `python3 kit/apm_kit.py vendor --dest <이 파일의 디렉터리>`
+#
+# 이 파일이 왜 사본으로 존재하나: `.apm` 포맷은 AgentPackage 가 소유하는데, 그 repo 는
+# 소비자(agent-hub) 의 빌드 컨텍스트에 없다(별도 private checkout, gitignored). 배포
+# 경로를 만들기 전까지 vendor 로 잇되, **정본은 하나이고 이 파일은 파생**이라는 것을
+# 헤더와 sha256 게이트로 강제한다. 손으로 고친 흔적은 게이트가 잡는다.
+#
+# source-sha256: {sha}
+"""
+
+
+def _vendor_payload() -> tuple[str, str]:
+    """(헤더 붙은 소스, 원본 sha256) — 정본 apm_codec.py 에서 파생."""
+    raw = (KIT_DIR / "apm_codec.py").read_bytes()
+    sha = hashlib.sha256(raw).hexdigest()
+    return VENDOR_HEADER.format(sha=sha) + "\n" + raw.decode("utf-8"), sha
+
+
+def cmd_vendor(args: argparse.Namespace) -> int:
+    """정본 코덱을 소비자 repo 로 내보낸다 / 내보낸 것이 안 갈렸는지 검사한다.
+
+    `--check` 는 소비자 CI 가 부르는 쪽이다. 파일이 없거나, 헤더가 없거나, 기록된
+    sha 가 지금 정본과 다르거나, 본문이 손으로 수정됐으면 **exit 1**.
+    """
+    payload, sha = _vendor_payload()
+    dest = Path(args.dest) / "apm_codec_vendored.py"
+
+    if args.check:
+        if not dest.is_file():
+            print(f"✗  vendor 파일 없음: {_display_path(dest)}")
+            return 1
+        actual = dest.read_text(encoding="utf-8")
+        if actual != payload:
+            recorded = ""
+            for line in actual.splitlines()[:20]:
+                if "source-sha256:" in line:
+                    recorded = line.split("source-sha256:")[1].strip()
+            print(f"✗  vendor 파일이 정본과 갈렸다: {_display_path(dest)}")
+            # 원인을 갈라 말한다. 둘은 대응이 다르다 — 전자는 남의 수정을 되살릴지
+            # 판단해야 하고, 후자는 그냥 다시 뽑으면 된다.
+            if recorded == sha:
+                print("     기록된 sha 는 정본과 같은데 본문이 다르다")
+                print(f"     → **이 파일을 손으로 고쳤다.** 고친 내용을 정본"
+                      f"(kit/apm_codec.py)에 옮긴 뒤 `vendor` 를 다시 돌려라.")
+            else:
+                print(f"     기록된 sha={recorded or '(없음)'}")
+                print(f"     정본   sha={sha}")
+                print("     → 정본이 바뀌었다. `vendor` 를 다시 돌려 갱신하라.")
+            return 1
+        print(f"✓  vendor 일치 (sha {sha[:16]}…)")
+        return 0
+
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(payload, encoding="utf-8")
+    print(f"✓  wrote {_display_path(dest)} (sha {sha[:16]}…)")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="apm-kit", description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -320,6 +384,13 @@ def main() -> int:
     p_build.add_argument("--out", help="output dir (default: dist/)")
     p_build.add_argument("--packs-dir", default=str(DEFAULT_PACKS_DIR))
     p_build.set_defaults(func=cmd_build)
+
+    p_vendor = sub.add_parser(
+        "vendor", help="정본 코덱을 소비자 repo 로 내보내기 / 갈렸는지 검사(--check)"
+    )
+    p_vendor.add_argument("--dest", required=True, help="소비자 패키지 디렉터리")
+    p_vendor.add_argument("--check", action="store_true", help="쓰지 않고 대조만")
+    p_vendor.set_defaults(func=cmd_vendor)
 
     p_market = sub.add_parser("market", help="generate .claude-plugin/marketplace.json")
     p_market.add_argument("--packs-dir", default=str(DEFAULT_PACKS_DIR))
