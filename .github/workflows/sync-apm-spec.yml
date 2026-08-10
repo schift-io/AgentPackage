@@ -95,5 +95,5 @@ jobs:
           publish_dir: ./out
           destination_dir: .
           user_name: Schift
-          user_email: oss@schift.io
+          user_email: hello@schift.io
           commit_message: "sync from AgentPackage@${{ github.sha }}"
