@@ -6,8 +6,13 @@
 
 명령:
   check  <pack> [--host agent-hub|local-byo]  호스트 능력 대조 (fail-closed)
-  lint   <pack>                                어휘·필수 필드·테넌트 정체성 스캔
+  lint   <pack> [--identity-patterns PATH]     어휘·필수 필드·테넌트 정체성 스캔
   market                                       .claude-plugin/marketplace.json 생성
+
+4개 서브커맨드 전부 `--packs-dir PATH`(기본: `<repo>/packs`)를 받는다 — 이 repo 밖으로
+kit만 떼어낼 때 packs 위치를 지정하기 위함. 디렉터리가 없으면 에러로 죽는다(빈손 성공
+금지). `lint`의 테넌트 정체성 패턴은 `kit/identity-patterns.json`(기본값)에서 읽는다 —
+파일이 없으면 스캔을 건너뛰고 그 사실을 명시적으로 출력한다(조용한 게이트 무력화 금지).
 
 발행 정책은 **fail-closed**: `apm.yml`에 `marketplace.publish: true`를 명시하지 않은
 팩은 마켓플레이스에 실리지 않는다. 선언이 없는 것이 기본이고, 그게 안전한 기본값이다.
@@ -23,21 +28,15 @@ from typing import Any
 
 KIT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = KIT_DIR.parent
-PACKS_DIR = REPO_ROOT / "packs"
+DEFAULT_PACKS_DIR = REPO_ROOT / "packs"
+# ⚠️ **`kit/` 밖(레포 루트)에 둔다.** 이 파일은 막으려는 정체성 문자열 자체를 담고
+# 있어서, `kit/` 안에 있으면 kit 을 공개 repo 로 미러하는 순간 그대로 따라간다.
+# "미러에서 제외하기"를 잊지 않는 것에 기대는 대신 디렉터리로 갈라 둔다.
+DEFAULT_IDENTITY_PATTERNS = REPO_ROOT / "identity-patterns.json"
 CAPS = json.loads((KIT_DIR / "capabilities.json").read_text(encoding="utf-8"))
 
 VOCAB: set[str] = set(CAPS["capabilities"])
 CLOUD_ONLY: set[str] = set(CAPS["cloud_only"])
-
-#: 공개 마켓플레이스에 나가면 안 되는 테넌트 정체성 흔적. 팩이 특정 org 이름/브랜드를
-#: 하드코딩하면 다른 org가 설치했을 때 그 정체성이 새어나간다(2026-07-20 tenancy
-#: leakage 감사에서 실재 확인). 공개 발행 전 차단한다.
-TENANT_IDENTITY_PATTERNS: tuple[tuple[str, str], ...] = (
-    (r"\bRoom\s?821\b", "Room821 정체성"),
-    (r"\broom821\b", "room821 식별자"),
-    (r"#FF4D00", "Schift 브랜드 컬러"),
-    (r"\bkimbyun\b", "폐기된 legal 트랙 식별자"),
-)
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -50,13 +49,40 @@ def _load_yaml(path: Path) -> dict[str, Any]:
     return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
 
-def _pack_dirs(name: str | None) -> list[Path]:
+def _pack_dirs(name: str | None, packs_dir: Path) -> list[Path]:
+    if not packs_dir.is_dir():
+        sys.exit(f"packs dir not found: {packs_dir} (--packs-dir 로 위치를 지정하라)")
     if name:
-        for candidate in (PACKS_DIR / name, PACKS_DIR / f"{name}.agent"):
+        for candidate in (packs_dir / name, packs_dir / f"{name}.agent"):
             if candidate.is_dir():
                 return [candidate]
-        sys.exit(f"pack not found: {name}")
-    return sorted(p for p in PACKS_DIR.glob("*.agent") if p.is_dir())
+        sys.exit(f"pack not found: {name} (packs-dir={packs_dir})")
+    dirs = sorted(p for p in packs_dir.glob("*.agent") if p.is_dir())
+    if not dirs:
+        # 조용한 성공 금지 — packs-dir 이 비어 있으면 "0개 검사됨"이 곧 게이트가
+        # 죽어 있다는 신호다(빈 리포트를 초록으로 착각하지 않게).
+        print(f"·  0개 팩 검사됨 (packs-dir={packs_dir}, *.agent 디렉터리 없음)")
+    return dirs
+
+
+def _load_identity_patterns(path: Path) -> list[tuple[str, str]]:
+    """테넌트 정체성 패턴을 외부 JSON에서 읽는다. `kit/identity-patterns.json`이 정본 —
+
+    이 파일을 소스에 다시 하드코딩하지 않는다(정체성 패턴 자체가 leak 소스이기
+    때문에, leak을 막는 코드가 leak 원인이 되는 것을 막으려는 목적).
+    """
+    if not path.is_file():
+        # 조용히 스캔을 건너뛰면 게이트가 죽은 줄 아무도 모른다 — 명시적으로 알린다.
+        print(f"·  정체성 스캔 비활성(패턴 파일 없음): {path}")
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        sys.exit(f"identity-patterns 파일이 유효한 JSON이 아니다: {path} ({exc})")
+    patterns = data.get("patterns") or []
+    if not patterns:
+        print(f"·  정체성 스캔 활성이나 패턴 0개: {path}")
+    return [(str(p["pattern"]), str(p["label"])) for p in patterns]
 
 
 def _required_caps(pack: Path) -> set[str]:
@@ -79,7 +105,7 @@ def _host_provides(host: str) -> set[str]:
 def cmd_check(args: argparse.Namespace) -> int:
     provides = _host_provides(args.host)
     failed = 0
-    for pack in _pack_dirs(args.pack):
+    for pack in _pack_dirs(args.pack, Path(args.packs_dir)):
         required = _required_caps(pack)
         unknown = required - VOCAB
         missing = (required & VOCAB) - provides
@@ -100,8 +126,9 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 
 def cmd_lint(args: argparse.Namespace) -> int:
+    identity_patterns = _load_identity_patterns(Path(args.identity_patterns))
     failed = 0
-    for pack in _pack_dirs(args.pack):
+    for pack in _pack_dirs(args.pack, Path(args.packs_dir)):
         problems: list[str] = []
         manifest = _load_yaml(pack / "apm.yml")
 
@@ -117,12 +144,12 @@ def cmd_lint(args: argparse.Namespace) -> int:
             problems.append(f"unknown capabilities {sorted(unknown)}")
 
         # 공개 발행 대상만 정체성 스캔 — 내부 전용 팩은 org 정체성을 가져도 정상이다.
-        if (manifest.get("marketplace") or {}).get("publish"):
+        if (manifest.get("marketplace") or {}).get("publish") and identity_patterns:
             for path in sorted(pack.rglob("*")):
                 if not path.is_file() or path.suffix not in {".md", ".yml", ".yaml"}:
                     continue
                 text = path.read_text(encoding="utf-8", errors="ignore")
-                for pattern, label in TENANT_IDENTITY_PATTERNS:
+                for pattern, label in identity_patterns:
                     if re.search(pattern, text):
                         rel = path.relative_to(pack)
                         problems.append(f"publish-blocked: {label} in {rel}")
@@ -159,7 +186,7 @@ def cmd_market(args: argparse.Namespace) -> int:
     plugins: list[dict[str, Any]] = []
     skipped: list[str] = []
     unpinned: list[str] = []
-    for pack in _pack_dirs(None):
+    for pack in _pack_dirs(None, Path(args.packs_dir)):
         manifest = _load_yaml(pack / "apm.yml")
         market = manifest.get("marketplace") or {}
         if not market.get("publish"):
@@ -230,7 +257,7 @@ def cmd_build(args: argparse.Namespace) -> int:
     out_dir = Path(args.out or (REPO_ROOT / "dist"))
     out_dir.mkdir(parents=True, exist_ok=True)
     rc = 0
-    for pack in _pack_dirs(args.pack):
+    for pack in _pack_dirs(args.pack, Path(args.packs_dir)):
         manifest = _load_yaml(pack / "apm.yml")
         if not manifest:
             print(f"✗  {pack.name}: apm.yml missing/empty")
@@ -261,18 +288,28 @@ def main() -> int:
     p_check = sub.add_parser("check", help="host capability check")
     p_check.add_argument("pack", nargs="?")
     p_check.add_argument("--host", default="agent-hub")
+    p_check.add_argument("--packs-dir", default=str(DEFAULT_PACKS_DIR))
     p_check.set_defaults(func=cmd_check)
 
     p_lint = sub.add_parser("lint", help="vocabulary / required fields / identity scan")
     p_lint.add_argument("pack", nargs="?")
+    p_lint.add_argument("--packs-dir", default=str(DEFAULT_PACKS_DIR))
+    p_lint.add_argument(
+        "--identity-patterns",
+        default=str(DEFAULT_IDENTITY_PATTERNS),
+        help="테넌트 정체성 패턴 JSON 경로 (기본: kit/identity-patterns.json). "
+        "파일이 없으면 정체성 스캔을 건너뛰고 명시적으로 알린다.",
+    )
     p_lint.set_defaults(func=cmd_lint)
 
     p_build = sub.add_parser("build", help="pack dir -> .apm artifact (apm.yml = 정본)")
     p_build.add_argument("pack", nargs="?")
     p_build.add_argument("--out", help="output dir (default: dist/)")
+    p_build.add_argument("--packs-dir", default=str(DEFAULT_PACKS_DIR))
     p_build.set_defaults(func=cmd_build)
 
     p_market = sub.add_parser("market", help="generate .claude-plugin/marketplace.json")
+    p_market.add_argument("--packs-dir", default=str(DEFAULT_PACKS_DIR))
     p_market.set_defaults(func=cmd_market)
 
     args = parser.parse_args()

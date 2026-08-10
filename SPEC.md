@@ -174,8 +174,13 @@ $ apm-kit check image-gen.agent --host local-byo
   마켓플레이스에 실리지 않는다.** 선언 없음이 기본이고 그게 안전한 기본값이다.
 - **테넌트 정체성 스캔:** `publish: true` 인 팩에 한해 `.md`/`.yml`/`.yaml` 전 파일을
   스캔해 특정 org 정체성이 하드코딩돼 있으면 **발행을 막는다**(다른 org 가 설치하면
-  그 정체성이 샌다 — 2026-07-20 tenancy leakage 감사에서 실재 확인). 현재 패턴:
-  `Room 821` · `room821` · `#FF4D00` · `kimbyun`.
+  그 정체성이 샌다 — 2026-07-20 tenancy leakage 감사에서 실재 확인). 패턴은 소스에
+  하드코딩하지 않고 `identity-patterns.json`(레포 루트. `--identity-patterns` 로 경로 변경
+  가능)에서 읽는다 — 정체성을 leak 으로부터 막는 코드 자체가 정체성을 담고 있으면
+  분리 의미가 없기 때문. 이 kit 을 이 repo 밖으로 떼어낼 때는 이 파일을 안 가져가거나
+  `--identity-patterns /dev/null` 처럼 빈 경로를 지정하면 스캔이 비활성화되고, 그 사실을
+  명시적으로 출력한다(조용히 건너뛰지 않는다). 현재(이 repo 기준) 루트 `identity-patterns.json`
+  의 내용: `Room 821` · `room821` · `#FF4D00` · `kimbyun`.
 - **소스 위치:** 마켓플레이스 항목의 `source` 는 이 repo 안 상대경로가 아니라 **각 팩의
   공개 repo** 를 가리킨다. 이 repo 는 private 이고 내부 팩을 담고 있어서, 마켓플레이스로
   쓰려고 public 으로 뒤집으면 그 소스가 통째로 노출된다 — `marketplace.json` 은 *목록에
