@@ -18,6 +18,12 @@ README 는 "왜 이 포맷인가"를 논증하고, 이 문서는 "무엇이 참�
 
 ## 1. 범위
 
+실행 결과 계약은 프로토콜 0.1.0의 규범 문서인
+docs/version-0.1.0.md, docs/runner-selection.md, docs/run-result-v1.md,
+docs/artifact-results.md, docs/execution-modes.md, docs/permissions.md에
+정의한다. 이 문서들은 호스트 구현을 고정하지 않지만 결과·권한·격리의
+의미를 바꾸는 것을 허용하지 않는다.
+
 | 규정한다 | 규정하지 않는다 |
 |---|---|
 | `.apm` 컨테이너 바이트 레이아웃(§3) | 팩이 무엇을 하는지(도메인 정책 — `agent.md` 의 몫) |

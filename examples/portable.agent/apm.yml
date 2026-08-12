@@ -4,6 +4,27 @@ version: 0.1.0
 description: "A runtime-neutral AgentPackage CLI fixture."
 runtime_boundary:
   host_services_only: []
+protocol:
+  version: 0.1.0
+  result: apm.run.result.v1
+runner:
+  selection: capability_match
+  modes: [local, isolated]
+execution:
+  default_mode: local
+permissions:
+  requires:
+    scopes: []
+artifacts:
+  declared:
+    - name: greeting
+      path: artifacts/greeting/greeting.md
+      media_type: text/markdown
+fixtures:
+  declared:
+    - name: hello
+      path: fixtures/hello-input.json
+      media_type: application/json
 pipeline: react
 agents:
   - id: portable-hello/agent.md
