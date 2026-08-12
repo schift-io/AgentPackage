@@ -1,0 +1,13 @@
+name: hello
+display_name: "Hello Agent"
+version: 0.1.0
+description: >-
+  Minimal portable Agent Package example. It requires no vendor-specific
+  Runtime capability.
+pipeline: react
+agents:
+  - id: hello/agent.md
+    path: agent.md
+artifacts:
+  markdown_title: "Hello Agent result"
+  html_artifact_title: "Hello Agent result.html"

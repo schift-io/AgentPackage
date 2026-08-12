@@ -1,7 +1,35 @@
-# Agent Package (`.apm`)
+# Agent Package (`.agent` → `.apm`)
 
 에이전트 팩을 **봉인된 아티팩트 하나**로 유통하는 포맷. `.zip` 처럼 파일까지 통째로
 봉인하고, content-hash 가 곧 주소이며, **요구하는 호스트 능력을 스스로 선언**한다.
+
+## `.agent`와 `.apm`
+
+`.agent`는 Git에서 사람이 읽고 수정하는 **소스 패키지**다. npm 모듈의 소스
+디렉터리처럼 `apm.yml`, 에이전트 지침, 프롬프트, 스킬, 템플릿을 담는다.
+
+```text
+.agent 소스 → apm-kit validate/build → .apm 아티팩트 → Runtime adapter → 실제 실행
+```
+
+`.apm`은 검증된 파일, 정규화된 manifest, content hash를 가진 **배포·설치 단위**다.
+Runtime은 `.apm` 포맷을 바꾸지 않고, 선언된 capability를 Schift, Cloudflare,
+로컬 또는 사용자 정의 인프라에 연결한다. 상세한 adapter 계약은
+[`docs/runtime-adapter.md`](docs/runtime-adapter.md)에 있다.
+
+## Runtime 중립성
+
+팩은 특정 회사의 endpoint, secret, DB, queue, 모델 이름 또는 배포 방식을 전제로
+하지 않는다. 필요한 것은 `llm.generate`, `artifact.write`, `source.search`,
+`image.reference` 같은 capability로 선언한다.
+
+- Schift adapter: Agent Hub, 검색, artifact store
+- Cloudflare adapter: Workers AI, R2, Durable Objects, Queues
+- Local adapter: Ollama, ComfyUI, 로컬 파일/SQLite
+- Custom adapter: 사용자의 API, GPU, 저장소
+
+필수 capability를 제공하지 못하는 Runtime은 실행 전에 fail-closed로 거절해야 한다.
+새 Runtime adapter를 추가해도 `.agent`나 `.apm` 포맷은 바뀌지 않는다.
 
 - **[`SPEC.md`](SPEC.md) 가 규범적 사양이다.** 여기 적힌 것과 구현이 다르면 구현이 버그다.
 - 참조 구현: [`kit/`](kit) — `apm_codec.py`(컨테이너·해시) · `capabilities.json`(능력 어휘) ·
@@ -51,5 +79,13 @@ python3 kit/apm_kit.py build higgsfield-demo.agent --packs-dir examples --out /t
 - **v1.** 포맷 버전은 해시 접두사 `apm-v1` 이 들고 있다.
 - **서명은 아직 없다.** content-hash 는 변조를 잡지만 **출처를 증명하지 못한다.**
   제3자 팩을 받기 시작하는 순간 서명이 함께 필요하다 — `SPEC.md` §9.
-- 이 저장소는 **파생**이다. 정본은 사내 `schift-io/AgentPackage` 의 `SPEC.md`·`kit/`
-  이고 여기로 단방향 복사된다. 이슈/PR 은 받되 반영은 정본에서 이뤄진다.
+- 이 저장소는 공개 규약의 **파생 mirror**다. 정본 구현과 조직별 팩은 각자의 저장소에서
+  관리하고, 이 저장소에는 공개 포맷·참조 kit·예시만 단방향 복사된다. 이슈/PR은
+  환영하지만 규약 반영은 정본에서 검토한 뒤 mirror로 동기화한다.
+
+Cloudflare adapter를 구현할 때 참고할 공식 문서:
+
+- [Workers AI](https://developers.cloudflare.com/workers-ai/)
+- [R2](https://developers.cloudflare.com/r2/)
+- [Durable Objects](https://developers.cloudflare.com/durable-objects/)
+- [Queues](https://developers.cloudflare.com/queues/)

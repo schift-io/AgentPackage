@@ -1,9 +1,9 @@
-# Agent Package (`.apm`) — 포맷 사양 v1
+# Agent Package (`.agent` → `.apm`) — 공개 포맷 사양 v1
 
 이 문서가 **`.apm` 의 규범적 사양**이다. 여기 적힌 것과 구현이 다르면 **구현이 버그**다.
 README 는 "왜 이 포맷인가"를 논증하고, 이 문서는 "무엇이 참인가"를 정의한다.
 
-- 상태: **v1, 사내 사양**(private). 서명은 아직 없다(§9).
+- 상태: **v1, 공개 오픈소스 사양**. 서명은 아직 없다(§9).
 - 정본 구현: `kit/apm_codec.py`(컨테이너·해시) · `kit/capabilities.json`(능력 어휘) ·
   `kit/apm_kit.py`(검증·빌드 CLI).
 - 라이선스: Apache-2.0 (`LICENSE`).
@@ -25,14 +25,15 @@ README 는 "왜 이 포맷인가"를 논증하고, 이 문서는 "무엇이 참�
 | 매니페스트 정본 판정 순서(§5) | 레지스트리 API 표면(호스트 소관) |
 | 호스트 능력 계약과 fail-closed 판정(§6) | 결제·과금 정책 |
 | 발행 게이트(§7) · 버전 판정(§8) | 서명·발행자 신뢰(§9, 미정) |
+| `.agent` source와 `.apm` artifact의 관계(§2) | 특정 Runtime의 내부 API |
 
 ## 2. 용어
 
-- **팩(pack)** — 디렉터리 `<slug>.agent/`. 저작 단위.
-- **`.apm`** — 팩 디렉터리를 통째로 봉인한 단일 아티팩트. 배포·설치 단위.
+- **`.agent` source package** — 디렉터리 `<slug>.agent/`. Git에서 편집하는 저작 단위.
+- **`.apm` artifact** — `.agent` 디렉터리를 통째로 봉인한 단일 아티팩트. 배포·설치 단위.
 - **매니페스트(manifest)** — `.apm` 안 `manifest.json` 의 JSON 객체. 등록·실행 메타의 정본.
-- **호스트(host)** — 팩을 실행하는 런타임. 현재 둘: `agent-hub`(Schift Cloud) ·
-  `local-byo`(로컬 Claude Code / Codex).
+- **호스트(host)** — `.apm`을 실행하는 Runtime. Schift, Cloudflare, local, custom 등
+  규약 밖의 구현도 같은 capability 판정식을 사용한다.
 - **능력(capability)** — 팩이 호스트에 요구하는 서비스 이름. 어휘는 §6.
 
 ## 3. 컨테이너 — 결정적 tar.gz
@@ -104,7 +105,7 @@ intake_question  intake_options  feature_flag  hidden  owner_org_id
 거절**한다. 해시 검증과 매니페스트 화이트리스트 검증(`validate_manifest`)은 **별개
 단계**이며 둘 다 통과해야 등록된다.
 
-## 5. 팩 레이아웃과 매니페스트 정본
+## 5. `.agent` 레이아웃과 매니페스트 정본
 
 ```
 <slug>.agent/
@@ -141,6 +142,30 @@ intake_question  intake_options  feature_flag  hidden  owner_org_id
 | `memory.seed` | | 선언하면 발행 전 seed 검증이 fail-closed 로 돈다 |
 
 `agent.md` 누락, `name`/`version` 누락은 **lint 실패**다.
+
+`.agent`는 npm package source와 같은 역할을 한다. `apm-kit build`의 산출물인
+`.apm`만 배포·설치할 수 있으며, 개발용 direct mode도 같은 validation을 먼저
+통과해야 한다. `.agent`를 검증 없이 Runtime에 전달하는 것은 규약 준수가 아니다.
+
+## 5.2 Runtime-neutral 규칙
+
+`.agent`와 `.apm`은 특정 vendor의 endpoint, secret, binding, database, queue를
+가정하지 않는다. 팩은 capability와 operation의 요구만 선언한다.
+
+```yaml
+capabilities:
+  required: [llm.generate, artifact.write]
+  optional: [source.search, image.reference]
+```
+
+Runtime adapter는 capability를 실제 서비스에 연결한다. 예를 들어 Schift는 Agent
+Hub와 Schift artifact store를, Cloudflare는 Workers AI·R2·Durable Objects를,
+local adapter는 Ollama·ComfyUI·filesystem을 제공할 수 있다. 이 매핑은 package
+hash의 내용이 아니라 Runtime 배포 설정이다.
+
+필수 capability를 제공하지 못하는 호스트는 실행 전에 fail-closed로 거절해야 한다.
+어떤 호스트가 capability를 제공하는지는 공개 포맷의 고정 목록이 아니며, 새 Runtime
+adapter를 추가해도 `.apm` 포맷을 바꿀 필요가 없어야 한다.
 
 ## 6. 호스트 능력 계약 — fail-closed 협상
 
@@ -225,9 +250,10 @@ $ apm-kit check image-gen.agent --host local-byo
   한 번 그 실수를 했다. 값을 보려면 운영 중인 repo 의 `identity-patterns.json` 을
   직접 열어라.
 - **소스 위치:** 마켓플레이스 항목의 `source` 는 이 repo 안 상대경로가 아니라 **각 팩의
-  공개 repo** 를 가리킨다. 이 repo 는 private 이고 내부 팩을 담고 있어서, 마켓플레이스로
-  쓰려고 public 으로 뒤집으면 그 소스가 통째로 노출된다 — `marketplace.json` 은 *목록에
-  뭘 싣느냐*만 통제하지 *repo 에 뭐가 보이느냐*는 통제하지 못한다.
+  공개 repo** 를 가리킨다. 규약 repo와 조직 전용 팩 repo의 공개 범위는 분리할 수 있다.
+  이 규약 repo를 공개한다고 별도 private 팩 repo가 공개되는 것은 아니다.
+  `marketplace.json`은 *목록에 뭘 싣느냐*만 통제하므로, private 팩은 애초에 별도 repo에서
+  관리해야 한다.
 - **`sha` 핀이 없으면 재현 불가**이므로 경고한다. 빠진 팩·미핀 팩은 항상 이름을 출력한다
   (조용한 누락 금지).
 

@@ -5,7 +5,7 @@
 팩은 배포물이고 배포물이 서비스 코드를 import하면 분리한 의미가 없다.
 
 명령:
-  check  <pack> [--host agent-hub|local-byo]  호스트 능력 대조 (fail-closed)
+  check  <pack> [--host HOST]                  호스트 능력 대조 (fail-closed)
   lint   <pack> [--identity-patterns PATH]     어휘·필수 필드·테넌트 정체성 스캔
   vendor --dest <dir> [--check]                 정본 코덱 내보내기 / 갈림 검사
   market                                       .claude-plugin/marketplace.json 생성
@@ -210,9 +210,9 @@ def cmd_market(args: argparse.Namespace) -> int:
     """`marketplace.publish: true` 를 선언한 팩만 실어 marketplace.json 을 만든다.
 
     **source는 이 repo 안의 상대경로가 아니라 각 팩의 공개 repo를 가리킨다.**
-    이 repo(AgentPackage)는 private이고 내부 팩 24개를 담고 있어서, 마켓플레이스로
-    쓰려고 public으로 뒤집으면 그 24개 소스가 통째로 노출된다 — `marketplace.json`은
-    *목록에 뭘 싣느냐*만 통제하지 *repo에 뭐가 보이느냐*는 통제하지 못한다.
+    AgentPackage 규약 repo와 조직 전용 팩 repo의 공개 범위는 분리해야 한다.
+    `marketplace.json`은 *목록에 뭘 싣느냐*만 통제하지 *repo에 뭐가 보이느냐*는
+    통제하지 못하므로, private 팩은 별도 repo에 둔다.
 
     그래서 공개 팩은 **팩마다 자기 public repo**를 갖고, 여기서는 그 repo를
     `git-subdir`/`url` 소스로 가리키기만 한다. 공식 Claude 마켓플레이스가 쓰는
@@ -239,7 +239,7 @@ def cmd_market(args: argparse.Namespace) -> int:
         if not repo_url:
             sys.exit(
                 f"{pack.name}: marketplace.publish is true but 'repo' is missing. "
-                "공개 팩은 자기 public repo를 가리켜야 한다(이 repo는 private)."
+                "공개 팩은 자기 public repo를 가리켜야 한다. private 팩은 별도 repo에 둔다."
             )
         source: dict[str, Any] = {
             "source": "git-subdir" if market.get("path") else "url",
@@ -268,7 +268,7 @@ def cmd_market(args: argparse.Namespace) -> int:
     doc = {
         "name": "agent-package",
         "description": "Agent Package — sealed, RAG-native agent packs. "
-        "Grounding and execution via Schift Cloud (API key required).",
+        "Grounding and execution are supplied by the selected Runtime adapter.",
         "owner": {"name": "Schift", "url": "https://github.com/schift-io"},
         "plugins": plugins,
     }
@@ -433,7 +433,7 @@ def main() -> int:
     )
     p_lint.set_defaults(func=cmd_lint)
 
-    p_build = sub.add_parser("build", help="pack dir -> .apm artifact (apm.yml = 정본)")
+    p_build = sub.add_parser("build", help=".agent dir -> .apm artifact")
     p_build.add_argument("pack", nargs="?")
     p_build.add_argument("--out", help="output dir (default: dist/)")
     p_build.add_argument("--packs-dir", default=str(DEFAULT_PACKS_DIR))

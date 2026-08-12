@@ -1,12 +1,27 @@
-# Agent Package (`.apm`)
+# Agent Package (`.agent` → `.apm`)
 
-에이전트 팩을 **봉인된 아티팩트 하나**로 유통하는 포맷 + 그 정본 저장소.
+에이전트 팩을 Git에서 만들고, 검증된 배포 아티팩트로 봉인해 어떤 Runtime에서도
+실행할 수 있게 하는 오픈소스 규약 + 정본 저장소.
+
+Node module의 흐름과 비슷하다.
+
+```text
+<name>.agent/             편집 가능한 소스 패키지
+  → apm-kit validate      계약·능력 검증
+  → apm-kit build         결정적 bundle 생성
+<name>-<version>.apm      설치·배포 가능한 bundle
+  → Runtime adapter       Schift, Cloudflare, local, custom host
+```
+
+`.agent`는 Git에서 관리하는 원본이고 `.apm`은 그 원본에서 빌드한 배포물이다.
+Runtime은 `.agent`의 내부 구현을 직접 알지 않고 `.apm`의 선언과 capability를
+자기 서비스에 연결한다.
 
 `.zip`처럼 파일까지 통째로 봉인하고, content-hash가 곧 주소이며, 요구하는 호스트
-능력을 스스로 선언한다. 같은 팩이 **Schift Cloud와 로컬 Claude Code/Codex 양쪽에서**
-돈다.
+능력을 스스로 선언한다. 같은 팩이 **Schift, Cloudflare Workers, 로컬 Runtime,
+사용자 정의 호스트**에서 돌 수 있다.
 
-> **규범적 사양은 [`SPEC.md`](SPEC.md)** — 컨테이너 바이트 레이아웃 · content-hash
+> **규범적 사양은 [`SPEC.md`](SPEC.md)** — `.agent`/`.apm` 경계, 컨테이너 바이트 레이아웃 · content-hash
 > 산출식 · 능력 계약 · 발행 게이트 · 버전 판정. 이 README 는 *왜* 를 논증하고,
 > SPEC 은 *무엇이 참인가* 를 정의한다. 라이선스 Apache-2.0([`LICENSE`](LICENSE)).
 >
@@ -97,6 +112,26 @@ $ apm-kit check image-gen.agent --host local-byo
 
 ---
 
+## `.agent`와 `.apm`
+
+`.agent`는 사람이 편집하는 source package다. `apm.yml`과 파일 트리가 저작 입력이고,
+Runtime-specific endpoint나 secret은 넣지 않는다.
+
+`.apm`은 `apm-kit build`가 만든 validated, hashed, distributable artifact다.
+Registry에 올리거나 Runtime에 설치하는 것은 `.apm`이며, 개발 편의를 위해 Runtime이
+`.agent`를 직접 받는 dev mode를 제공할 수 있어도 내부적으로는 먼저 validate해야 한다.
+
+```text
+research-to-creative.agent/       # Git source
+├── apm.yml
+├── agent.md
+├── skills/
+├── references/
+└── operations/
+
+research-to-creative-0.1.0.apm     # built artifact
+```
+
 ## 구조
 
 ```
@@ -105,12 +140,43 @@ kit/                    apm-kit — 점검/빌드 키트 (agent-hub 비의존)
 .claude-plugin/         marketplace.json (kit이 생성, 손으로 고치지 말 것)
 ```
 
-## 두 가지 유통 경로
+## Runtime adapter와 capability
+
+패키지 규약은 실행 서비스를 고정하지 않는다. 팩은 필요한 capability만 선언하고,
+Runtime adapter가 실제 구현을 제공한다.
+
+```yaml
+capabilities:
+  required:
+    - llm.generate
+    - artifact.write
+  optional:
+    - source.search
+    - image.reference
+```
+
+같은 `.apm`을 다음처럼 연결할 수 있다.
+
+```text
+Schift adapter       → Agent Hub, Schift search, Schift artifact store
+Cloudflare adapter   → Workers AI, R2, Durable Objects, Queues
+Local adapter        → Ollama/ComfyUI, filesystem, SQLite
+Custom adapter       → 사용자가 제공하는 API·GPU·스토리지
+```
+
+Runtime 설정은 패키지 계약과 분리한다. 예를 들어 `env.AI`, `R2_BUCKET`,
+`SCHIFT_API_URL`은 `.agent`에 넣지 않고 각 adapter의 배포 설정으로 둔다.
+
+자세한 adapter 작성 규칙은 [`docs/runtime-adapter.md`](docs/runtime-adapter.md)를
+참조한다.
+
+## 유통 경로
 
 | 경로 | 대상 | 형태 |
 |---|---|---|
-| **`.apm` 아티팩트** | Schift Cloud (agent-hub) | tar+매니페스트 봉인 → content-hash → R2 → `apm_refs` DB |
-| **Claude Code 마켓플레이스** | 로컬 하네스 (BYO-LLM) | `/plugin marketplace add` → 각 팩의 public repo (SHA 핀) |
+| **Git source** | 개발자·Runtime adapter | `<name>.agent/`를 clone해 수정·검증 |
+| **`.apm` 아티팩트** | Schift·Cloudflare·local·custom Runtime | tar+매니페스트 봉인 → content-hash → 선택한 registry/store |
+| **Marketplace** | Claude Code 등 로컬 하네스 | 각 팩의 public repo 또는 release (SHA 핀) |
 
 ## 호스트 능력 계약
 
@@ -136,10 +202,9 @@ python3 kit/apm_kit.py market                   # marketplace.json 생성
 
 ## 발행은 fail-closed
 
-이 repo는 **private**이고 내부 팩을 담는다. 공개 팩은 **자기 public repo**를 갖고,
-여기 `marketplace.json`은 그걸 가리키기만 한다 (`marketplace.json`은 *목록*만
-통제하지 *repo 가시성*은 통제하지 못하므로, 이 repo를 public으로 뒤집으면 내부 팩이
-통째로 샌다).
+이 repo는 **공개 규약·키트 정본**이다. 실제 조직 전용 팩은 별도 private/public
+repository에서 관리할 수 있고, `marketplace.json`은 공개 배포할 팩의 source를
+가리키기만 한다. 이 repo에 조직 전용 콘텐츠를 넣지 않는 것이 원칙이다.
 
 ```yaml
 marketplace:
@@ -152,9 +217,9 @@ marketplace:
 `lint`는 발행 대상에 한해 **테넌트 정체성 스캔**을 돌린다. 특정 org 이름/브랜드가
 하드코딩된 팩은 다른 org가 설치했을 때 그 정체성이 새므로 발행을 막는다.
 
-## 마켓플레이스 개방 전 필수 (아직 없음)
+## 제3자 팩 실행 전 필수 (아직 없음)
 
-제3자 팩을 받기 시작하면 필요하고, 지금은 셋 다 없다:
+제3자 팩을 안전하게 받으려면 다음이 필요하다:
 
 1. **아티팩트 서명** — 현재는 변조 감지만 하고 발행자 신원 증명이 없다
 2. **프롬프트 인젝션 / 숨은 유니코드 스캔**
@@ -162,8 +227,13 @@ marketplace:
 
 근거: 모노레포 `docs/research/2026-07-20-agent-packaging-ecosystem-survey.md`
 
-## 상태
+## Runtime 예시
 
-원본(`services/agent-hub/apm/`)은 아직 제거하지 않았다 — 타 세션 워커가 같은 트리에서
-실행 중이었기 때문. 착지 후 제거 + agent-hub 경로 재배선.
-상세: 모노레포 `docs/plans/2026-07-20-schift-packs-repo-and-marketplace.md`
+Cloudflare는 Workers AI와 R2를 binding으로 연결할 수 있고, Durable Objects로
+상태 있는 agent 실행을 구성할 수 있다. 이 repo는 Cloudflare 계정이나 Schift
+서비스를 요구하지 않는다. Runtime adapter가 `llm.generate`, `artifact.write`,
+`state.durable` 같은 capability를 제공하면 같은 `.apm`을 실행할 수 있다.
+
+공식 참고: [Workers AI bindings](https://developers.cloudflare.com/workers-ai/configuration/bindings/),
+[R2 Workers API](https://developers.cloudflare.com/r2/api/workers/workers-api-reference/),
+[Durable Objects](https://developers.cloudflare.com/durable-objects/)

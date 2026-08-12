@@ -8,8 +8,9 @@
 #
 # 나가는 것만 명시적으로 복사한다(allow-list). deny-list 로 하면 나중에 추가되는
 # 파일이 **기본값으로 따라 나간다**.
-#   나간다:   SPEC.md · LICENSE · kit/{apm_codec,apm_kit,capabilities.json}
-#             examples/** · mirror/README.md → README.md · mirror/gitignore → .gitignore
+#   나간다:   SPEC.md · LICENSE · docs/runtime-adapter.md ·
+#             kit/{apm_codec,apm_kit,capabilities.json} · examples/** ·
+#             mirror/README.md → README.md · mirror/gitignore → .gitignore
 #   안 나간다: identity-patterns.json(정체성 문자열 자체) · kit/publish.py(사내 발행
 #             인프라, 포맷 아님) · packs/** · dist/** · .github/**
 #
@@ -26,10 +27,11 @@ PUSH=0
 cd "$REPO_ROOT"
 
 # ── 1. 조립 ────────────────────────────────────────────────────────────────
-mkdir -p "$STAGE/kit"
+mkdir -p "$STAGE/kit" "$STAGE/docs"
 cp SPEC.md LICENSE "$STAGE/"
 cp mirror/README.md "$STAGE/README.md"
 cp mirror/gitignore "$STAGE/.gitignore"
+cp docs/runtime-adapter.md "$STAGE/docs/runtime-adapter.md"
 cp kit/apm_codec.py kit/apm_kit.py kit/capabilities.json "$STAGE/kit/"
 cp -R examples "$STAGE/examples"
 find "$STAGE" -name __pycache__ -type d -prune -exec rm -rf {} +

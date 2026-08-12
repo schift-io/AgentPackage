@@ -1,4 +1,22 @@
-# `higgsfield-demo.agent` — spec example, not a live pack
+# Examples
+
+## `hello.agent`
+
+The smallest portable package. It has no Schift, Cloudflare, provider, or
+billing dependency and is useful for checking that a Runtime can load the
+format:
+
+```bash
+python3 kit/apm_kit.py lint hello.agent --packs-dir examples
+python3 kit/apm_kit.py check hello.agent --host local-byo --packs-dir examples
+python3 kit/apm_kit.py build hello.agent --packs-dir examples --out dist
+```
+
+The output is a versioned `.apm` artifact. A Runtime adapter may install that
+artifact on Schift, Cloudflare Workers, a local process, or another host that
+provides the package's declared capabilities.
+
+## `higgsfield-demo.agent` — spec example, not a live pack
 
 `higgsfield-demo.agent/` is an **identity-scrubbed teaching copy** of the live
 `packs/higgsfield.agent` pack. It exists to give `SPEC.md` one worked example
