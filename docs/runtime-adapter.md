@@ -98,3 +98,24 @@ Adapters should report both:
 
 The protocol version answers “can I parse this package?” The capability set answers
 “can I execute this package here?” They are deliberately separate.
+
+## Logical runtime reference and deployment binding
+
+An optional package-level `runtime_ref` selects a logical execution target without
+selecting a cloud vendor:
+
+```yaml
+runtime_ref: apm://runtime/human-input-runner@0.1.0
+```
+
+The Runtime resolves that URI through a separately managed
+`apm.runtime.binding.v1` document. The document carries the provider resource,
+base invocation URL, non-secret authentication descriptor, and the capability set
+the binding actually provides. It must live with deployment configuration or a
+credential store, never in `apm.yml`, `pack.json`, or a sealed `.apm` artifact.
+
+The first concrete profile is `gcp-cloud-run` with a Cloud Run resource name and
+Google OIDC audience. Lambda, Cloudflare Workers, Vercel Functions, Supabase Edge,
+and custom adapters use the same logical-ref boundary but own their provider
+invocation implementation. See [`runtime-binding.md`](runtime-binding.md) for the
+full shape, capability gate, and CLI resolution contract.

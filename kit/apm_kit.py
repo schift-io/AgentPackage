@@ -374,6 +374,10 @@ def _vendor_runtime_contract_payload() -> tuple[str, str]:
     return _vendor_python_payload("runtime_contract.py")
 
 
+def _vendor_runtime_binding_payload() -> tuple[str, str]:
+    return _vendor_python_payload("runtime_binding.py")
+
+
 def _vendor_caps_payload() -> tuple[str, str]:
     """(능력 어휘 JSON, 원본 sha256) — 정본 capabilities.json 에서 파생.
 
@@ -403,6 +407,10 @@ def cmd_vendor(args: argparse.Namespace) -> int:
         (
             Path(args.dest) / "apm_runtime_contract_vendored.py",
             *_vendor_runtime_contract_payload(),
+        ),
+        (
+            Path(args.dest) / "apm_runtime_binding_vendored.py",
+            *_vendor_runtime_binding_payload(),
         ),
         (Path(args.dest) / "apm_capabilities_vendored.json", *_vendor_caps_payload()),
     ]

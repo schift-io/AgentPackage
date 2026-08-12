@@ -16,6 +16,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "kit"))
 
 import apm_kit
+from runtime_binding import (
+    RuntimeBindingError,
+    resolve_runtime_binding,
+    validate_runtime_binding_document,
+)
 from runtime_contract import runtime_required_capabilities, validate_runtime_contract
 
 
@@ -59,6 +64,90 @@ class RuntimeContractTests(unittest.TestCase):
         problems = validate_runtime_contract(manifest)
 
         self.assertTrue(any("model_inference_adapter" in problem for problem in problems))
+
+    def test_runtime_ref_is_logical_and_provider_neutral(self) -> None:
+        manifest = {
+            "runtime_ref": "apm://runtime/human-input-runner@0.1.0",
+            "runtime_boundary": {"host_services_only": []},
+        }
+
+        self.assertEqual(validate_runtime_contract(manifest), [])
+
+        manifest["runtime_ref"] = "https://runner.example.invalid"
+        problems = validate_runtime_contract(manifest)
+        self.assertTrue(any("must match" in problem for problem in problems))
+
+    def test_cloud_run_binding_resolves_logical_ref_and_checks_capabilities(self) -> None:
+        manifest = {
+            "runtime_ref": "apm://runtime/human-input-runner@0.1.0",
+            "runtime_boundary": {
+                "host_services_only": [
+                    "human_input_channel",
+                    "isolated_sandbox",
+                    "model_inference_adapter",
+                ]
+            },
+        }
+        document = {
+            "version": "apm.runtime.binding.v1",
+            "bindings": {
+                "apm://runtime/human-input-runner@0.1.0": {
+                    "provider": "gcp-cloud-run",
+                    "resource": "projects/example/locations/asia-northeast3/services/runner",
+                    "invoke_url": "https://runner-example.run.app/",
+                    "auth": {
+                        "type": "gcp-oidc",
+                        "audience": "https://runner-example.run.app",
+                        "invoker_service_account": "host@example.iam.gserviceaccount.com",
+                    },
+                    "capabilities": [
+                        "human_input_channel",
+                        "isolated_sandbox",
+                        "model_inference_adapter",
+                    ],
+                }
+            },
+        }
+
+        self.assertEqual(validate_runtime_binding_document(document), [])
+        plan = resolve_runtime_binding(
+            manifest,
+            document,
+            required_capabilities=manifest["runtime_boundary"]["host_services_only"],
+        )
+        self.assertEqual(plan["protocol"], "apm.runtime.resolution.v1")
+        self.assertEqual(plan["invoke_url"], "https://runner-example.run.app")
+        self.assertEqual(plan["required_capabilities"], sorted(manifest["runtime_boundary"]["host_services_only"]))
+
+        document["bindings"]["apm://runtime/human-input-runner@0.1.0"]["capabilities"].pop()
+        with self.assertRaisesRegex(RuntimeBindingError, "lacks required capabilities"):
+            resolve_runtime_binding(
+                manifest,
+                document,
+                required_capabilities=manifest["runtime_boundary"]["host_services_only"],
+            )
+
+    def test_cloud_run_binding_rejects_unmatched_audience(self) -> None:
+        document = {
+            "version": "apm.runtime.binding.v1",
+            "bindings": {
+                "apm://runtime/human-input-runner@0.1.0": {
+                    "provider": "gcp-cloud-run",
+                    "resource": "projects/example/locations/asia-northeast3/services/runner",
+                    "invoke_url": "https://runner-example.run.app",
+                    "auth": {
+                        "type": "gcp-oidc",
+                        "audience": "https://wrong-audience.run.app",
+                        "invoker_service_account": "host@example.iam.gserviceaccount.com",
+                    },
+                    "capabilities": [],
+                }
+            },
+        }
+
+        self.assertTrue(
+            any("audience must equal" in problem for problem in validate_runtime_binding_document(document))
+        )
 
     def test_plugin_path_cannot_escape_package_root(self) -> None:
         pack, manifest = self._interoperability_fixture()

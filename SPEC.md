@@ -144,6 +144,7 @@ intake_question  intake_options  feature_flag  hidden  owner_org_id
 | `description` | | 한 줄 설명 |
 | `runtime_boundary.host_services_only` | | 요구 능력 목록(§6). 문자열 단수도 허용 |
 | `runtime_contract` | | model/입력/CCLG/data/MCP/sandbox/상호운용 호스트 계약. [`docs/runtime-services-v1.md`](docs/runtime-services-v1.md) |
+| `runtime_ref` | | 논리 실행기 URI (`apm://runtime/<name>@<semver>`). provider endpoint가 아닌 binding lookup key |
 | `artifacts.package_ref` | | `<slug>@<version>`. **버전 판정의 실체**(§8) |
 | `marketplace.*` | | 발행 선언(§7) |
 | `router_*` · `hub.*` | | 등록/전시 메타 — 해시 제외(§4.1) |
@@ -177,6 +178,13 @@ host-mediated data/MCP, 격리 sandbox, Agent Plugins/A2A 호환을 같은 방�
 각 선언이 요구하는 capability를 `runtime_boundary.host_services_only`에도 반드시
 명시해야 한다. 상세 shape와 파생 capability는
 [`docs/runtime-services-v1.md`](docs/runtime-services-v1.md)가 정한다.
+
+특정 실행기를 우선 선택해야 할 때에는 optional `runtime_ref`를 쓴다. 이 값은
+`apm://runtime/human-input-runner@0.1.0`처럼 **논리 이름과 SemVer**만 담는다.
+Cloud Run URL, Lambda ARN, Worker route, service account, token audience, secret은
+모두 deployment-owned `apm.runtime.binding.v1` 문서에 둔다. 따라서 같은 `.apm`의
+content hash를 바꾸지 않고 provider를 교체할 수 있다. binding 문서의 규범적 shape와
+Cloud Run 예시는 [`docs/runtime-binding.md`](docs/runtime-binding.md)에 있다.
 
 필수 capability를 제공하지 못하는 호스트는 실행 전에 fail-closed로 거절해야 한다.
 어떤 호스트가 capability를 제공하는지는 공개 포맷의 고정 목록이 아니며, 새 Runtime

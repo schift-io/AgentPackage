@@ -1,0 +1,20 @@
+{
+  "version": "apm.runtime.binding.v1",
+  "bindings": {
+    "apm://runtime/human-input-runner@0.1.0": {
+      "provider": "gcp-cloud-run",
+      "resource": "projects/PROJECT_ID/locations/REGION/services/SERVICE_NAME",
+      "invoke_url": "https://SERVICE_NAME-HASH-REGION.run.app",
+      "auth": {
+        "type": "gcp-oidc",
+        "audience": "https://SERVICE_NAME-HASH-REGION.run.app",
+        "invoker_service_account": "RUNTIME_INVOKER@PROJECT_ID.iam.gserviceaccount.com"
+      },
+      "capabilities": [
+        "human_input_channel",
+        "isolated_sandbox",
+        "model_inference_adapter"
+      ]
+    }
+  }
+}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
 
@@ -14,6 +15,11 @@ AGENT_PLUGINS_MCP_SCHEMA = (
     "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
 )
 A2A_VERSION = "1.0"
+_RUNTIME_REF_PATTERN = re.compile(
+    r"^apm://runtime/[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?@"
+    r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)"
+    r"(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"
+)
 
 
 def declared_host_capabilities(manifest: dict[str, Any]) -> set[str]:
@@ -88,13 +94,16 @@ def validate_runtime_contract(
     pack_root: Path | None = None,
     package_files: Mapping[str, bytes] | None = None,
 ) -> list[str]:
+    problems: list[str] = []
+    if "runtime_ref" in manifest:
+        _validate_runtime_ref(manifest.get("runtime_ref"), problems)
     if "runtime_contract" not in manifest:
-        return []
+        return problems
     contract = manifest["runtime_contract"]
     if not isinstance(contract, dict):
-        return ["runtime_contract must be an object"]
+        problems.append("runtime_contract must be an object")
+        return problems
 
-    problems: list[str] = []
     allowed = {
         "version",
         "model",
@@ -131,6 +140,17 @@ def validate_runtime_contract(
             f"{undeclared}"
         )
     return problems
+
+
+def _validate_runtime_ref(value: Any, problems: list[str]) -> None:
+    if not isinstance(value, str) or not value.strip():
+        problems.append("runtime_ref must be a non-empty logical APM runtime URI")
+        return
+    if not _RUNTIME_REF_PATTERN.fullmatch(value):
+        problems.append(
+            "runtime_ref must match 'apm://runtime/<name>@<semver>' and must not "
+            "contain a provider URL"
+        )
 
 
 def _validate_model(value: Any, problems: list[str]) -> None:
