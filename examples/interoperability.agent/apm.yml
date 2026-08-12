@@ -1,0 +1,54 @@
+name: interoperability-demo
+display_name: "Interoperability Demo"
+version: 0.1.0
+description: "A runtime-services v1 fixture for Agent Plugins, A2A, CCLG, governed MCP, and sandbox negotiation."
+runtime_boundary:
+  host_services_only:
+    - model_inference_adapter
+    - human_input_channel
+    - cclg_memory_read
+    - cclg_memory_candidate_write
+    - web_search_connector
+    - connected_source_search_connector
+    - connected_source_fetch_connector
+    - scoped_mcp_binding
+    - isolated_sandbox
+    - provider_egress_proxy
+    - agent_plugins_runtime
+    - a2a_task_server
+runtime_contract:
+  version: apm.runtime.services.v1
+  model:
+    interface: chat.v1
+    selection: host
+    input_modes: [text/plain]
+    output_modes: [text/plain]
+  interaction:
+    channel: host-mediated
+    resume: task-turn
+  memory:
+    format: cclg/0.1
+    read: scoped-active-pack
+    write: candidate-only
+  data:
+    web_search: host-mediated
+    connected_sources:
+      search: host-mediated
+      fetch: host-mediated
+  mcp:
+    bindings:
+      - id: schift-memory
+        scopes: [memory:read]
+        tools: [memory.search, memory.cite]
+  sandbox:
+    mode: isolated
+    package_network: none
+    model_egress: provider-proxy
+  interoperability:
+    agent_plugins:
+      version: 1.0.0
+      plugin_manifest: ./plugin.json
+    a2a:
+      version: "1.0"
+      role: server
+      agent_card_template: ./a2a/agent-card.template.json

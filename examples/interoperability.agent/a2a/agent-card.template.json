@@ -1,0 +1,29 @@
+{
+  "name": "Interoperability Demo",
+  "description": "A source-grounded drafting agent that uses host-governed data and memory capabilities.",
+  "version": "0.1.0",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text/plain",
+    "application/json"
+  ],
+  "skills": [
+    {
+      "id": "research-and-draft",
+      "name": "Research and draft",
+      "description": "Researches authorized sources and prepares a cited draft.",
+      "tags": [
+        "research",
+        "drafting"
+      ],
+      "examples": [
+        "Research this brief and prepare a cited draft."
+      ]
+    }
+  ]
+}

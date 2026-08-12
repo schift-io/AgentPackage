@@ -170,6 +170,26 @@ Runtime 설정은 패키지 계약과 분리한다. 예를 들어 `env.AI`, `R2_
 자세한 adapter 작성 규칙은 [`docs/runtime-adapter.md`](docs/runtime-adapter.md)를
 참조한다.
 
+### Agent Plugins · A2A를 기본 호환 profile로 채택
+
+APM은 자체 플러그인 포맷이나 agent-to-agent wire protocol을 만들지 않는다.
+새 runtime-services v1 패키지는 필요할 때 upstream **Agent Plugins 1.0**의
+`plugin.json` · `skills/` · `mcp.json` layout과 **A2A 1.0**의 Agent Card/task
+계약을 그대로 선언한다. APM이 더하는 것은 sealed artifact hash, capability
+negotiation, host authorization, and sandbox/egress policy다.
+
+```text
+Agent Plugins  → plugin distribution and component discovery
+A2A            → remote-agent discovery, tasks, artifacts, multi-turn input
+MCP            → tool/resource wire protocol
+APM            → verified package + permission + runtime/sandbox boundary
+```
+
+이 경계와 `runtime_contract`의 model DI, human input, CCLG memory transfer,
+external search/data, governed MCP, and isolation rules are
+[`docs/runtime-services-v1.md`](docs/runtime-services-v1.md)와
+[`docs/interoperability.md`](docs/interoperability.md)에 규범적으로 정의한다.
+
 ## 유통 경로
 
 | 경로 | 대상 | 형태 |

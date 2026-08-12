@@ -34,6 +34,24 @@ The output is a versioned `.apm` artifact. A Runtime adapter may install that
 artifact on Schift, Cloudflare Workers, a local process, or another host that
 provides the package's declared capabilities.
 
+## `interoperability.agent`
+
+This fixture opts into the runtime-services v1 contract and demonstrates the
+upstream Agent Plugins 1.0 layout plus an A2A 1.0 Agent Card template. It asks
+for every governed runtime capability on purpose, so a partial runtime must
+reject it before execution rather than providing direct network, memory, or MCP
+access by accident.
+
+```bash
+python3 kit/apm_kit.py lint interoperability.agent --packs-dir examples
+python3 kit/apm_kit.py check interoperability.agent --host docker-codex-isolated --packs-dir examples
+```
+
+The second command is expected to fail because the Docker Codex adapter only
+provides model inference, isolation, and a provider-only egress proxy. It does
+not claim CCLG, search/data, governed MCP, Agent Plugins component execution,
+A2A transport, or host-mediated human input yet.
+
 ## `higgsfield-demo.agent` — spec example, not a live pack
 
 `higgsfield-demo.agent/` is an **identity-scrubbed teaching copy** of the live

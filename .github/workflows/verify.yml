@@ -25,6 +25,9 @@ jobs:
       - name: lint (어휘 · 필수 필드 · 테넌트 정체성)
         run: python3 kit/apm_kit.py lint
 
+      - name: runtime-contract validation
+        run: python3 -m unittest discover -s tests -v
+
       # 두 호스트 모두 확인한다. local-byo 실패는 **정보**이지 CI 실패가 아니다 —
       # 어떤 팩이 왜 로컬에서 못 도는지가 로컬 실행 로드맵 그 자체다.
       - name: check — agent-hub (Cloud)

@@ -20,7 +20,8 @@ README 는 "왜 이 포맷인가"를 논증하고, 이 문서는 "무엇이 참�
 
 실행 결과 계약은 프로토콜 0.1.0의 규범 문서인
 docs/version-0.1.0.md, docs/runner-selection.md, docs/run-result-v1.md,
-docs/artifact-results.md, docs/execution-modes.md, docs/permissions.md에
+docs/artifact-results.md, docs/execution-modes.md, docs/permissions.md,
+docs/runtime-services-v1.md, docs/interoperability.md에
 정의한다. 이 문서들은 호스트 구현을 고정하지 않지만 결과·권한·격리의
 의미를 바꾸는 것을 허용하지 않는다.
 
@@ -142,6 +143,7 @@ intake_question  intake_options  feature_flag  hidden  owner_org_id
 | `version` | ✔ | semver 문자열 |
 | `description` | | 한 줄 설명 |
 | `runtime_boundary.host_services_only` | | 요구 능력 목록(§6). 문자열 단수도 허용 |
+| `runtime_contract` | | model/입력/CCLG/data/MCP/sandbox/상호운용 호스트 계약. [`docs/runtime-services-v1.md`](docs/runtime-services-v1.md) |
 | `artifacts.package_ref` | | `<slug>@<version>`. **버전 판정의 실체**(§8) |
 | `marketplace.*` | | 발행 선언(§7) |
 | `router_*` · `hub.*` | | 등록/전시 메타 — 해시 제외(§4.1) |
@@ -169,6 +171,13 @@ Hub와 Schift artifact store를, Cloudflare는 Workers AI·R2·Durable Objects�
 local adapter는 Ollama·ComfyUI·filesystem을 제공할 수 있다. 이 매핑은 package
 hash의 내용이 아니라 Runtime 배포 설정이다.
 
+`runtime_contract`를 선언하는 팩은 model DI, 사용자 입력 재개, CCLG memory,
+host-mediated data/MCP, 격리 sandbox, Agent Plugins/A2A 호환을 같은 방식으로
+선언한다. 이 블록은 provider endpoint·secret·임의 네트워크 권한을 담지 않으며,
+각 선언이 요구하는 capability를 `runtime_boundary.host_services_only`에도 반드시
+명시해야 한다. 상세 shape와 파생 capability는
+[`docs/runtime-services-v1.md`](docs/runtime-services-v1.md)가 정한다.
+
 필수 capability를 제공하지 못하는 호스트는 실행 전에 fail-closed로 거절해야 한다.
 어떤 호스트가 capability를 제공하는지는 공개 포맷의 고정 목록이 아니며, 새 Runtime
 adapter를 추가해도 `.apm` 포맷을 바꿀 필요가 없어야 한다.
@@ -181,10 +190,12 @@ adapter를 추가해도 `.apm` 포맷을 바꿀 필요가 없어야 한다.
 - 팩은 `runtime_boundary.host_services_only` 로 요구 능력을 선언한다.
 - 능력 이름의 **전체 집합(어휘)은 `kit/capabilities.json` 이 단일 정본**이다. 어휘에
   없는 이름을 선언하면 lint/check 가 실패한다(오타·무단 신규 차단).
-- 호스트는 `provides: "*"` 또는 `excludes: [...]` 로 자기 능력을 선언한다.
-  - `agent-hub` — `provides: "*"`
-  - `local-byo` — `excludes: usage_ledger, credit_metering, hwpx_render_connector,
-    render_worker, stitch_worker, connector_handoff, higgsfield_mcp`
+- 호스트는 제공하는 능력을 **명시 목록**으로 선언한다. 새 어휘가 추가되었다는 이유로
+  기존 호스트가 이를 자동으로 제공한다고 주장해서는 안 된다.
+  - `agent-hub` — 검증된 기존 Cloud capability 목록
+  - `local-byo` — 검증된 기존 로컬 capability 목록(과금·서버 워커 제외)
+  - `docker-codex-isolated` — `model_inference_adapter`, `isolated_sandbox`,
+    `provider_egress_proxy`만 제공; CCLG/search/MCP/A2A/Agent Plugins는 별도 adapter 전까지 거절
 - ⚠️ **호스트 프로필은 소비자 구현과 반드시 같아야 한다.** 갈리면 느슨한 쪽이 아니라
   **엄격한 쪽**에 맞춘다 — 느슨한 쪽이 정본이 되면 팩 저자는 `check` 통과를 보고도
   실제로는 못 도는 팩을 낸다(2026-08-10 실측: 어휘는 28/28 같은데 `local-byo` 만
@@ -211,8 +222,8 @@ $ apm-kit check image-gen.agent --host local-byo
 
 ### 6.1 능력의 실행 위치 — `transport` (표현만, 2026-08-10)
 
-능력마다 **어디서 도는가**를 선언한다. 오늘 28개 전부 `in_process` 이고 런타임 동작은
-바뀌지 않는다 — 외부 능력을 열 때 포맷부터 고치지 않아도 되게 자리를 미리 판 것이다.
+능력마다 **어디서 도는가**를 선언한다. legacy host capability와 runtime-services v1
+capability가 공존하며, `http` capability는 host 바깥의 정책·연결 경계를 뜻한다.
 
 | `transport` | 뜻 |
 |---|---|

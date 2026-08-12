@@ -5,7 +5,7 @@
     "이 파일이 어휘의 단일 정본이다. agent-hub 의 host_capabilities.py 는 장차 이걸 읽도록 수렴시킨다.",
     "cloud_only = 유저 머신에서 강제 불가능한 능력. 이걸 요구하는 팩은 로컬 호스트에서 fail-closed 거절된다.",
     "⚠️ hosts 프로필은 소비자(agent-hub host_capabilities.py)와 반드시 같아야 한다. 2026-08-10 실측: 어휘는 28/28 같은데 local-byo 가 hwpx_render_connector 를 제공한다고 잘못 적혀 있어, 팩 저자가 check 를 돌리면 통과하는데 실제로는 못 도는 조합이 통과했다. 갈리면 느슨한 쪽이 아니라 **엄격한 쪽**에 맞춘다.",
-    "transport/metered_by 는 2026-08-10 에 **표현만** 추가했다. 오늘 전부 in_process/host 이고 런타임 동작은 안 바뀐다. 외부 능력을 열 때 포맷을 먼저 고치지 않아도 되게 자리를 미리 판 것이다 — 어휘가 닫혀 있던 이유는 각 이름이 우리 인프로세스 구현에 묶여 있어서였고, http 능력은 그 매듭을 푼다."
+    "runtime-services v1은 Agent Plugins/A2A/CCLG/host-mediated data와 Docker 격리의 이름을 추가한다. 이 어휘는 구현 약속이 아니다. host profile이 명시적으로 제공한다고 선언하지 않으면 fail-closed로 거절된다."
   ],
   "capabilities": {
     "auth": {
@@ -147,6 +147,71 @@
       "desc": "발행 게이트",
       "transport": "in_process",
       "metered_by": "host"
+    },
+    "model_inference_adapter": {
+      "desc": "호스트가 선택하는 chat.v1 모델 추론 어댑터",
+      "transport": "http",
+      "metered_by": "provider"
+    },
+    "human_input_channel": {
+      "desc": "중단된 작업에 사용자 입력을 제출하고 재개하는 호스트 채널",
+      "transport": "http",
+      "metered_by": "none"
+    },
+    "cclg_memory_read": {
+      "desc": "스코프된 CCLG active memory pack 읽기",
+      "transport": "http",
+      "metered_by": "none"
+    },
+    "cclg_memory_candidate_write": {
+      "desc": "검토 전용 CCLG memory candidate 쓰기",
+      "transport": "http",
+      "metered_by": "none"
+    },
+    "web_search_connector": {
+      "desc": "호스트 중개 외부 웹 검색",
+      "transport": "http",
+      "metered_by": "provider"
+    },
+    "connected_source_search_connector": {
+      "desc": "호스트 중개 연결 데이터 소스 검색",
+      "transport": "http",
+      "metered_by": "provider"
+    },
+    "connected_source_fetch_connector": {
+      "desc": "호스트 중개 연결 데이터 소스 가져오기",
+      "transport": "http",
+      "metered_by": "provider"
+    },
+    "scoped_mcp_binding": {
+      "desc": "호스트가 발급한 최소 권한 MCP 바인딩",
+      "transport": "http",
+      "metered_by": "none"
+    },
+    "isolated_sandbox": {
+      "desc": "강제된 filesystem/process/network 경계를 가진 격리 실행 공간",
+      "transport": "in_process",
+      "metered_by": "none"
+    },
+    "provider_egress_proxy": {
+      "desc": "모델 provider에만 연결하는 정책 강제 egress proxy",
+      "transport": "in_process",
+      "metered_by": "none"
+    },
+    "agent_plugins_runtime": {
+      "desc": "Agent Plugins 1.0 Skills/MCP component discovery runtime",
+      "transport": "in_process",
+      "metered_by": "none"
+    },
+    "a2a_task_client": {
+      "desc": "A2A 1.0 remote agent task client",
+      "transport": "http",
+      "metered_by": "none"
+    },
+    "a2a_task_server": {
+      "desc": "A2A 1.0 Agent Card와 task server",
+      "transport": "http",
+      "metered_by": "none"
     }
   },
   "cloud_only": [
@@ -165,24 +230,75 @@
   ],
   "hosts": {
     "agent-hub": {
-      "description": "Schift Cloud 실행 호스트. 오늘 전 팩을 실행 중이므로 전 능력 제공.",
-      "provides": "*"
-    },
-    "local-byo": {
-      "description": "로컬 BYO-LLM 하네스(Claude Code / Codex). 과금 원장은 유저 머신에서 강제 불가, 렌더/스티치 서버 워커 없음(HWPX 렌더 포함 — 우리 서비스다).",
-      "excludes": [
-        "usage_ledger",
-        "credit_metering",
+      "description": "Schift Cloud 실행 호스트. 검증된 기존 능력만 명시적으로 제공한다. 새 runtime-services 능력은 구현 전에는 주장하지 않는다.",
+      "provides": [
+        "auth",
+        "brand_bucket_rag",
+        "session_bucket_rag",
+        "directing_bucket_rag",
+        "tenant_core_memory_query",
+        "text_generation_connector",
+        "image_generation_connector",
+        "txt2img_connector",
+        "image_upscale_connector",
+        "image_search_connector",
+        "tts_connector",
+        "bgm_asset_connector",
+        "vision_scorer",
+        "multimodal_critique_scorer",
         "hwpx_render_connector",
         "render_worker",
         "stitch_worker",
+        "run_persistence",
+        "draft_persistence",
+        "note_storage",
+        "source_upload_storage",
+        "usage_ledger",
+        "credit_metering",
         "connector_handoff",
-        "higgsfield_mcp"
+        "higgsfield_mcp",
+        "block_catalog",
+        "awp_provenance_minting",
+        "publish_gate"
+      ]
+    },
+    "local-byo": {
+      "description": "로컬 BYO-LLM 일반 프로필. 검증된 기존 로컬 기능만 명시하고, 과금·서버 워커·새 runtime-services는 전용 adapter가 생기기 전까지 제공하지 않는다.",
+      "provides": [
+        "auth",
+        "brand_bucket_rag",
+        "session_bucket_rag",
+        "directing_bucket_rag",
+        "tenant_core_memory_query",
+        "text_generation_connector",
+        "image_generation_connector",
+        "txt2img_connector",
+        "image_upscale_connector",
+        "image_search_connector",
+        "tts_connector",
+        "bgm_asset_connector",
+        "vision_scorer",
+        "multimodal_critique_scorer",
+        "run_persistence",
+        "draft_persistence",
+        "note_storage",
+        "source_upload_storage",
+        "block_catalog",
+        "awp_provenance_minting",
+        "publish_gate"
+      ]
+    },
+    "docker-codex-isolated": {
+      "description": "Docker Codex development adapter. sealed instruction input, ephemeral workspace, no direct package network, and optional provider-only proxy egress. It does not yet provide human input, CCLG, search, MCP, Agent Plugins component loading, or A2A transport.",
+      "provides": [
+        "model_inference_adapter",
+        "isolated_sandbox",
+        "provider_egress_proxy"
       ]
     }
   },
   "_transport_legend": {
-    "in_process": "호스트 프로세스 안에서 실행. 오늘 28개 전부 여기.",
+    "in_process": "호스트 프로세스 안에서 실행.",
     "http": "호스트 **밖**에서 실행하고 HTTP 로 호출. 외부/고객 제공 능력의 자리다. 우리 프로세스에 남의 코드가 안 들어오므로 격리가 곧 신뢰 축이다 (서명 대신 샌드박스). ⚠️ **비동기 계약이어야 한다** — 잡 핸들을 돌려주고 완료는 콜백/폴링으로 받는다. 동기로 붙들면 우리 런 슬롯이 남의 계산을 기다리며 놀고, 우리는 계산도 안 하고 대기 비용만 낸다."
   },
   "_metered_by_legend": {

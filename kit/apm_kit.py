@@ -28,6 +28,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from runtime_contract import (
+    declared_host_capabilities,
+    runtime_required_capabilities,
+    validate_runtime_contract,
+)
+
 KIT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = KIT_DIR.parent
 DEFAULT_PACKS_DIR = REPO_ROOT / "packs"
@@ -128,11 +134,8 @@ def _version_of(manifest: dict[str, Any]) -> str:
 
 
 def _required_caps(pack: Path) -> set[str]:
-    boundary = _load_yaml(pack / "apm.yml").get("runtime_boundary") or {}
-    declared = boundary.get("host_services_only") or []
-    if isinstance(declared, str):
-        declared = [declared]
-    return {str(c).strip() for c in declared if str(c).strip()}
+    manifest = _manifest_of(pack)
+    return declared_host_capabilities(manifest) | runtime_required_capabilities(manifest)
 
 
 def _host_provides(host: str) -> set[str]:
@@ -141,6 +144,8 @@ def _host_provides(host: str) -> set[str]:
         sys.exit(f"unknown host: {host} (known: {', '.join(CAPS['hosts'])})")
     if spec.get("provides") == "*":
         return set(VOCAB)
+    if isinstance(spec.get("provides"), list):
+        return {str(capability) for capability in spec["provides"]}
     return VOCAB - set(spec.get("excludes") or [])
 
 
@@ -148,6 +153,14 @@ def cmd_check(args: argparse.Namespace) -> int:
     provides = _host_provides(args.host)
     failed = 0
     for pack in _pack_dirs(args.pack, Path(args.packs_dir)):
+        manifest = _manifest_of(pack)
+        contract_problems = validate_runtime_contract(manifest, pack_root=pack)
+        if contract_problems:
+            failed += 1
+            print(f"✗  {pack.name}: invalid runtime_contract")
+            for problem in contract_problems:
+                print(f"     - {problem}")
+            continue
         required = _required_caps(pack)
         unknown = required - VOCAB
         missing = (required & VOCAB) - provides
@@ -172,21 +185,24 @@ def cmd_lint(args: argparse.Namespace) -> int:
     failed = 0
     for pack in _pack_dirs(args.pack, Path(args.packs_dir)):
         problems: list[str] = []
-        manifest = _load_yaml(pack / "apm.yml")
+        manifest = _manifest_of(pack)
+        authoring = _load_yaml(pack / "apm.yml")
 
-        if not manifest.get("name"):
+        if not authoring.get("name"):
             problems.append("apm.yml missing 'name'")
-        if not manifest.get("version"):
+        if not authoring.get("version"):
             problems.append("apm.yml missing 'version'")
         if not (pack / "agent.md").is_file():
             problems.append("agent.md missing")
+
+        problems.extend(validate_runtime_contract(manifest, pack_root=pack))
 
         unknown = _required_caps(pack) - VOCAB
         if unknown:
             problems.append(f"unknown capabilities {sorted(unknown)}")
 
         # 공개 발행 대상만 정체성 스캔 — 내부 전용 팩은 org 정체성을 가져도 정상이다.
-        if (manifest.get("marketplace") or {}).get("publish") and identity_patterns:
+        if (authoring.get("marketplace") or {}).get("publish") and identity_patterns:
             for path in sorted(pack.rglob("*")):
                 if not path.is_file() or path.suffix not in {".md", ".yml", ".yaml"}:
                     continue
