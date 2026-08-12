@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from typing import Any
+from pathlib import Path, PurePosixPath
+from typing import Any, Mapping
 
 
 RUNTIME_CONTRACT_VERSION = "apm.runtime.services.v1"
@@ -83,7 +83,10 @@ def runtime_required_capabilities(manifest: dict[str, Any]) -> set[str]:
 
 
 def validate_runtime_contract(
-    manifest: dict[str, Any], *, pack_root: Path | None = None
+    manifest: dict[str, Any],
+    *,
+    pack_root: Path | None = None,
+    package_files: Mapping[str, bytes] | None = None,
 ) -> list[str]:
     if "runtime_contract" not in manifest:
         return []
@@ -116,7 +119,9 @@ def validate_runtime_contract(
     _validate_data(contract.get("data"), problems)
     _validate_mcp(contract.get("mcp"), problems)
     _validate_sandbox(contract.get("sandbox"), problems)
-    _validate_interoperability(contract.get("interoperability"), pack_root, problems)
+    _validate_interoperability(
+        contract.get("interoperability"), pack_root, package_files, problems
+    )
 
     required = runtime_required_capabilities(manifest)
     undeclared = sorted(required - declared_host_capabilities(manifest))
@@ -237,7 +242,10 @@ def _validate_sandbox(value: Any, problems: list[str]) -> None:
 
 
 def _validate_interoperability(
-    value: Any, pack_root: Path | None, problems: list[str]
+    value: Any,
+    pack_root: Path | None,
+    package_files: Mapping[str, bytes] | None,
+    problems: list[str],
 ) -> None:
     if value is None:
         return
@@ -256,15 +264,36 @@ def _validate_interoperability(
                 problems.append(
                     "runtime_contract.interoperability.agent_plugins.version must be '1.0.0'"
                 )
-            plugin_path = _package_json_path(
-                pack_root,
-                plugin.get("plugin_manifest"),
-                "runtime_contract.interoperability.agent_plugins.plugin_manifest",
-                problems,
-            )
-            if plugin_path is not None:
-                _validate_agent_plugin_manifest(plugin_path, problems)
-                _validate_agent_plugin_mcp(plugin_path.parent / "mcp.json", problems)
+            label = "runtime_contract.interoperability.agent_plugins.plugin_manifest"
+            if pack_root is not None:
+                plugin_path = _package_json_path(
+                    pack_root, plugin.get("plugin_manifest"), label, problems
+                )
+                if plugin_path is not None:
+                    _validate_agent_plugin_manifest(plugin_path, problems)
+                    _validate_agent_plugin_mcp(plugin_path.parent / "mcp.json", problems)
+            elif package_files is not None:
+                plugin_path = _package_json_file_path(
+                    package_files, plugin.get("plugin_manifest"), label, problems
+                )
+                if plugin_path is not None:
+                    _validate_agent_plugin_manifest_document(
+                        _read_package_json(
+                            package_files, plugin_path, "Agent Plugins plugin.json", problems
+                        ),
+                        problems,
+                    )
+                    mcp_path = str(PurePosixPath(plugin_path).parent / "mcp.json")
+                    if mcp_path in package_files:
+                        _validate_agent_plugin_mcp_document(
+                            _read_package_json(
+                                package_files,
+                                mcp_path,
+                                "Agent Plugins mcp.json",
+                                problems,
+                            ),
+                            problems,
+                        )
 
     a2a = value.get("a2a")
     if a2a is not None:
@@ -278,14 +307,27 @@ def _validate_interoperability(
             if role not in {"client", "server"}:
                 problems.append("runtime_contract.interoperability.a2a.role must be 'client' or 'server'")
             if role == "server":
-                card_path = _package_json_path(
-                    pack_root,
-                    a2a.get("agent_card_template"),
-                    "runtime_contract.interoperability.a2a.agent_card_template",
-                    problems,
-                )
-                if card_path is not None:
-                    _validate_a2a_card_template(card_path, problems)
+                label = "runtime_contract.interoperability.a2a.agent_card_template"
+                if pack_root is not None:
+                    card_path = _package_json_path(
+                        pack_root, a2a.get("agent_card_template"), label, problems
+                    )
+                    if card_path is not None:
+                        _validate_a2a_card_template(card_path, problems)
+                elif package_files is not None:
+                    card_path = _package_json_file_path(
+                        package_files, a2a.get("agent_card_template"), label, problems
+                    )
+                    if card_path is not None:
+                        _validate_a2a_card_template_document(
+                            _read_package_json(
+                                package_files,
+                                card_path,
+                                "A2A Agent Card template",
+                                problems,
+                            ),
+                            problems,
+                        )
             elif "agent_card_template" in a2a:
                 problems.append(
                     "runtime_contract.interoperability.a2a.agent_card_template is only valid for role 'server'"
@@ -331,6 +373,23 @@ def _package_json_path(
     return path
 
 
+def _package_json_file_path(
+    package_files: Mapping[str, bytes], value: Any, label: str, problems: list[str]
+) -> str | None:
+    if not isinstance(value, str) or not value.startswith("./"):
+        problems.append(f"{label} must be a package-relative './' JSON path")
+        return None
+    path = PurePosixPath(value[2:])
+    if path.is_absolute() or not path.parts or any(part in {".", ".."} for part in path.parts):
+        problems.append(f"{label} escapes the package root")
+        return None
+    relative = str(path)
+    if relative not in package_files:
+        problems.append(f"{label} does not exist: {value}")
+        return None
+    return relative
+
+
 def _read_json(path: Path, label: str, problems: list[str]) -> dict[str, Any] | None:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -343,8 +402,29 @@ def _read_json(path: Path, label: str, problems: list[str]) -> dict[str, Any] | 
     return value
 
 
+def _read_package_json(
+    package_files: Mapping[str, bytes], path: str, label: str, problems: list[str]
+) -> dict[str, Any] | None:
+    try:
+        value = json.loads(package_files[path].decode("utf-8"))
+    except (KeyError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        problems.append(f"{label} is not valid JSON: {exc}")
+        return None
+    if not isinstance(value, dict):
+        problems.append(f"{label} must contain a JSON object")
+        return None
+    return value
+
+
 def _validate_agent_plugin_manifest(path: Path, problems: list[str]) -> None:
-    plugin = _read_json(path, "Agent Plugins plugin.json", problems)
+    _validate_agent_plugin_manifest_document(
+        _read_json(path, "Agent Plugins plugin.json", problems), problems
+    )
+
+
+def _validate_agent_plugin_manifest_document(
+    plugin: dict[str, Any] | None, problems: list[str]
+) -> None:
     if plugin is None:
         return
     if plugin.get("$schema") != AGENT_PLUGINS_SCHEMA:
@@ -356,7 +436,14 @@ def _validate_agent_plugin_manifest(path: Path, problems: list[str]) -> None:
 def _validate_agent_plugin_mcp(path: Path, problems: list[str]) -> None:
     if not path.exists():
         return
-    mcp = _read_json(path, "Agent Plugins mcp.json", problems)
+    _validate_agent_plugin_mcp_document(
+        _read_json(path, "Agent Plugins mcp.json", problems), problems
+    )
+
+
+def _validate_agent_plugin_mcp_document(
+    mcp: dict[str, Any] | None, problems: list[str]
+) -> None:
     if mcp is None:
         return
     if mcp.get("$schema") != AGENT_PLUGINS_MCP_SCHEMA:
@@ -366,7 +453,14 @@ def _validate_agent_plugin_mcp(path: Path, problems: list[str]) -> None:
 
 
 def _validate_a2a_card_template(path: Path, problems: list[str]) -> None:
-    card = _read_json(path, "A2A Agent Card template", problems)
+    _validate_a2a_card_template_document(
+        _read_json(path, "A2A Agent Card template", problems), problems
+    )
+
+
+def _validate_a2a_card_template_document(
+    card: dict[str, Any] | None, problems: list[str]
+) -> None:
     if card is None:
         return
     for key in ("name", "description", "version"):

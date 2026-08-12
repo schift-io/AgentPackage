@@ -343,7 +343,7 @@ def cmd_build(args: argparse.Namespace) -> int:
 VENDOR_HEADER = """\
 # ⚠️ 생성된 파일 — 직접 고치지 마라. 고치면 `apm-kit vendor --check` 가 빨개진다.
 #
-# 정본: schift-io/AgentPackage `kit/apm_codec.py`
+# 정본: schift-io/AgentPackage `kit/{source_name}`
 # 갱신: 그 repo 에서 `python3 kit/apm_kit.py vendor --dest <이 파일의 디렉터리>`
 #
 # 이 파일이 왜 사본으로 존재하나: `.apm` 포맷은 AgentPackage 가 소유하는데, 그 repo 는
@@ -355,11 +355,23 @@ VENDOR_HEADER = """\
 """
 
 
-def _vendor_payload() -> tuple[str, str]:
-    """(헤더 붙은 소스, 원본 sha256) — 정본 apm_codec.py 에서 파생."""
-    raw = (KIT_DIR / "apm_codec.py").read_bytes()
+def _vendor_python_payload(source_name: str) -> tuple[str, str]:
+    raw = (KIT_DIR / source_name).read_bytes()
     sha = hashlib.sha256(raw).hexdigest()
-    return VENDOR_HEADER.format(sha=sha) + "\n" + raw.decode("utf-8"), sha
+    return (
+        VENDOR_HEADER.format(source_name=source_name, sha=sha)
+        + "\n"
+        + raw.decode("utf-8"),
+        sha,
+    )
+
+
+def _vendor_payload() -> tuple[str, str]:
+    return _vendor_python_payload("apm_codec.py")
+
+
+def _vendor_runtime_contract_payload() -> tuple[str, str]:
+    return _vendor_python_payload("runtime_contract.py")
 
 
 def _vendor_caps_payload() -> tuple[str, str]:
@@ -388,6 +400,10 @@ def cmd_vendor(args: argparse.Namespace) -> int:
     """
     targets = [
         (Path(args.dest) / "apm_codec_vendored.py", *_vendor_payload()),
+        (
+            Path(args.dest) / "apm_runtime_contract_vendored.py",
+            *_vendor_runtime_contract_payload(),
+        ),
         (Path(args.dest) / "apm_capabilities_vendored.json", *_vendor_caps_payload()),
     ]
     rc = 0

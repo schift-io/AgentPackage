@@ -294,6 +294,28 @@ class RuntimeContractTests(unittest.TestCase):
                         f"{label}: expected {expected!r}, got {problems!r}",
                     )
 
+    def test_interoperability_component_files_are_validated_from_bundle_files(self) -> None:
+        pack, manifest = self._interoperability_fixture()
+        files = {
+            str(path.relative_to(pack)): path.read_bytes()
+            for path in pack.rglob("*")
+            if path.is_file()
+        }
+
+        self.assertEqual(
+            validate_runtime_contract(manifest, package_files=files), []
+        )
+
+        card = json.loads(files["a2a/agent-card.template.json"].decode("utf-8"))
+        card.pop("defaultOutputModes")
+        files["a2a/agent-card.template.json"] = json.dumps(card).encode("utf-8")
+
+        problems = validate_runtime_contract(manifest, package_files=files)
+
+        self.assertIn(
+            "A2A Agent Card template must declare 'defaultOutputModes'", problems
+        )
+
     def test_host_capability_check_is_positive_for_docker_subset_and_fail_closed_for_full_fixture(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
