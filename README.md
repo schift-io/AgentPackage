@@ -1,17 +1,64 @@
-# Agent Package (`.agent` → `.apm`)
+# AgentPackage (APM)
 
-에이전트 팩을 Git에서 만들고, 검증된 배포 아티팩트로 봉인해 어떤 Runtime에서도
-실행할 수 있게 하는 오픈소스 규약 + 정본 저장소.
+> **Build from yours. Run with others. Same contract.**
+>
+> 내가 만든 에이전트를, 다른 사람이 가진 Runtime에서, 같은 계약으로 실행한다.
 
-Node module의 흐름과 비슷하다.
+APM(Agent Package)은 에이전트를 Git에서 만들고, 검증된 배포 아티팩트로 봉인해
+서로 다른 Runtime에서 실행하기 위한 **공개 패키지 규약과 정본 키트**다.
+
+APM이 해결하는 문제는 간단하다. 프롬프트와 스킬은 내 컴퓨터에 있는데 모델,
+검색, MCP, 메모리, 이미지 생성, 샌드박스는 다른 사람의 서버에 있을 수 있다.
+APM은 이 경계를 패키지와 실행 계약으로 고정한다.
 
 ```text
-<name>.agent/             편집 가능한 소스 패키지
-  → apm-kit validate      계약·능력 검증
-  → apm-kit build         결정적 bundle 생성
-<name>-<version>.apm      설치·배포 가능한 bundle
-  → Runtime adapter       Schift, Cloudflare, local, custom host
+<name>.agent/             내가 편집하는 Git source package
+  → apm-kit lint/check    구조·능력·호스트 계약 검증
+  → apm-kit build         결정적 .apm artifact 생성
+<name>-<version>.apm      설치·배포 가능한 sealed package
+  → Runtime adapter       local, Schift, Cloudflare, Vercel, AWS, custom host
 ```
+
+## Docker for Agents
+
+APM은 Docker를 흉내 내는 제품이 아니다. 다만 사용자가 이해하기 쉬운 비유로는
+**Docker for Agents**에 가깝다.
+
+Docker가 애플리케이션을 이미지로 봉인해 여러 환경에서 같은 입력 경계를 가진 채
+실행하게 했다면, APM은 에이전트의 instructions, skills, tools, memory,
+artifacts, permissions를 `.apm`으로 봉인한다. 실제 모델·검색·스토리지·MCP와
+샌드박스는 각 Runtime adapter가 제공하고, 패키지는 필요한 capability를 선언한다.
+
+| Docker | APM |
+|---|---|
+| application source | `.agent` source package |
+| image | `.apm` sealed artifact |
+| container/runtime | Runtime adapter |
+| ports, env, volumes | capability·permission·data contract |
+| container isolation | sandbox·network egress policy |
+| image digest | package content hash |
+
+여기서 “same result”는 LLM의 문장이 항상 바이트 단위로 같다는 뜻이 아니다.
+같은 package hash, 입력·데이터 snapshot, 모델/version, temperature, Runtime
+contract를 고정하면 재현 가능한 실행을 목표로 한다. 조건이 달라지면 APM이
+보장하는 것은 같은 **계약·권한·trace·artifact 의미**이며, 결과 텍스트의 동일성은
+보장하지 않는다.
+
+## 60초 만에 패키지 만들기
+
+```bash
+# source package를 검증한다
+python3 kit/apm_kit.py lint examples/portable.agent --packs-dir examples
+python3 kit/apm_kit.py check examples/portable.agent --host local-byo --packs-dir examples
+
+# Runtime에 넘길 sealed artifact를 만든다
+python3 kit/apm_kit.py build examples/portable.agent --packs-dir examples --out dist
+```
+
+실제 예시는 [`gongnangi-chart.agent`](examples/gongnangi-chart.agent)다.
+`0.1.0` 같은 SemVer 패키지로 만들고, 다른 Runtime에서는 `.apm`만 받아
+검증·설치한다. 개발 중에는 `.agent`를 직접 지정할 수 있지만 Runtime은 먼저
+동일한 검증을 수행해야 한다.
 
 `.agent`는 Git에서 관리하는 원본이고 `.apm`은 그 원본에서 빌드한 배포물이다.
 Runtime은 `.agent`의 내부 구현을 직접 알지 않고 `.apm`의 선언과 capability를
@@ -22,8 +69,8 @@ Runtime은 `.agent`의 내부 구현을 직접 알지 않고 `.apm`의 선언과
 사용자 정의 호스트**에서 돌 수 있다.
 
 > **규범적 사양은 [`SPEC.md`](SPEC.md)** — `.agent`/`.apm` 경계, 컨테이너 바이트 레이아웃 · content-hash
-> 산출식 · 능력 계약 · 발행 게이트 · 버전 판정. 이 README 는 *왜* 를 논증하고,
-> SPEC 은 *무엇이 참인가* 를 정의한다. 라이선스 Apache-2.0([`LICENSE`](LICENSE)).
+> 산출식 · 능력 계약 · 발행 게이트 · 버전 판정. 이 README는 *왜*를 설명하고,
+> SPEC은 *무엇이 참인가*를 정의한다.
 >
 > ⚠️ 이름 충돌: 여기서 APM 은 **Agent Package**(봉인 아티팩트 포맷)이고,
 > `microsoft/apm`("Agent Package Manager", npm 식 의존성 관리자)과 **무관하다** —
@@ -170,6 +217,26 @@ Runtime 설정은 패키지 계약과 분리한다. 예를 들어 `env.AI`, `R2_
 자세한 adapter 작성 규칙은 [`docs/runtime-adapter.md`](docs/runtime-adapter.md)를
 참조한다.
 
+### 한 패키지, 여러 실행 환경
+
+```text
+.agent source
+    │ lint / check / build
+    ▼
+.apm + content hash
+    │ capability negotiation · policy · sandbox
+    ├── local adapter       → BYO model, local files, SQLite
+    ├── Schift adapter      → Agent Hub, search, artifact store
+    ├── Cloudflare adapter  → Workers AI, R2, Durable Objects, Queues
+    ├── Vercel adapter      → model provider, storage, edge/server runtime
+    └── AWS adapter         → Lambda, Bedrock, S3, Step Functions
+```
+
+APM이 정하는 것은 패키지의 내용과 실행 전 계약이다. adapter가 정하는 것은
+구체적인 provider SDK, credential, 배포 방식, 비용 계량, 격리 구현이다. 따라서
+Schift를 사용하지 않아도 APM 규약을 구현할 수 있고, Schift Runtime을 사용해도
+패키지 자체는 공개 포맷으로 교환할 수 있다.
+
 ### Agent Plugins · A2A를 기본 호환 profile로 채택
 
 APM은 자체 플러그인 포맷이나 agent-to-agent wire protocol을 만들지 않는다.
@@ -197,6 +264,25 @@ external search/data, governed MCP, and isolation rules are
 | **Git source** | 개발자·Runtime adapter | `<name>.agent/`를 clone해 수정·검증 |
 | **`.apm` 아티팩트** | Schift·Cloudflare·local·custom Runtime | tar+매니페스트 봉인 → content-hash → 선택한 registry/store |
 | **Marketplace** | Claude Code 등 로컬 하네스 | 각 팩의 public repo 또는 release (SHA 핀) |
+
+## 규약과 상용 서비스의 경계
+
+이 저장소의 규약, `apm-kit`, 예제, 그리고 패키지 포맷은 [`LICENSE`](LICENSE)에
+따라 공개한다. 공개 규약을 누구나 검증하고 구현할 수 있어야 생태계가 성립한다.
+
+대기업 사용만 허용하거나 상업적 사용에 별도 제한을 거는 조건은 OSI 의미의
+오픈소스 라이선스와 양립하지 않는다. 따라서 상용화는 규약을 잠그는 방식이
+아니라 다음과 같이 **Runtime 서비스의 가치**를 분리하는 방향을 취한다.
+
+- managed Runtime 실행, SLA, 지원, 조직·권한·감사, 과금·usage ledger
+- private connector, enterprise identity, 전용 sandbox와 배포 adapter
+- Schift Cloud 또는 고객사 전용 운영 환경
+
+이 레포의 공개 규약을 제한하는 상업 라이선스를 도입하려면 먼저 라이선스 명칭과
+권리를 다시 정의해야 한다. 그런 경우 “오픈소스”라고 부르지 않고
+source-available 또는 commercial source license로 명확히 구분해야 하며,
+법률 검토가 필요하다. 현재 README가 설명하는 기본선은 **공개 APM 규약 + 별도
+상용 Runtime/운영 서비스**다.
 
 ## 호스트 능력 계약
 
