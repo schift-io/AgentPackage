@@ -116,6 +116,7 @@ credential store, never in `apm.yml`, `pack.json`, or a sealed `.apm` artifact.
 
 The first concrete profile is `gcp-cloud-run` with a Cloud Run resource name and
 Google OIDC audience. Lambda, Cloudflare Workers, Vercel Functions, Supabase Edge,
-and custom adapters use the same logical-ref boundary but own their provider
-invocation implementation. See [`runtime-binding.md`](runtime-binding.md) for the
-full shape, capability gate, and CLI resolution contract.
+and custom remote adapters use the same logical-ref boundary but own their provider
+invocation implementation. A local adapter selects directly by capability and does
+not need an external HTTPS binding. See [`runtime-binding.md`](runtime-binding.md)
+for the full shape, capability gate, and CLI resolution contract.

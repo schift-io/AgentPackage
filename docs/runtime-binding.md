@@ -88,7 +88,8 @@ descriptors while keeping the actual value in its secret manager or local keycha
 | Cloudflare Workers | Worker/service identity | Worker service binding or service token | Same binding shape; invocation adapter is provider-owned |
 | Vercel Functions | Project/function deployment identity | deployment-scoped credential chosen by the adapter | Same binding shape; invocation adapter is provider-owned |
 | Supabase Edge | project/function identity | project-scoped credential chosen by the adapter | Same binding shape; invocation adapter is provider-owned |
-| local/custom | adapter-defined identity | local process/keychain | Same logical ref and capability gate |
+| local host | no external binding; capability-selected host profile | local process/keychain | `runwith`/local adapter selects by capability |
+| custom remote Runtime | adapter-defined resource identity | adapter-defined credential | Same binding shape; invocation adapter is provider-owned |
 
 “Same binding shape” does not mean every provider adapter is already implemented.
 An adapter must reject an unresolved or unsupported binding rather than silently
