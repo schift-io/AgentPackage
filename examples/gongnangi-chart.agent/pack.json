@@ -8,7 +8,9 @@
   "runtime_boundary": {
     "host_services_only": [
       "model_inference_adapter",
-      "isolated_sandbox"
+      "isolated_sandbox",
+      "provider_egress_proxy",
+      "human_input_channel"
     ]
   },
   "protocol": {
@@ -71,10 +73,14 @@
         "application/json"
       ]
     },
+    "interaction": {
+      "channel": "host-mediated",
+      "resume": "task-turn"
+    },
     "sandbox": {
       "mode": "isolated",
       "package_network": "none",
-      "model_egress": "none"
+      "model_egress": "provider-proxy"
     }
   },
   "upstream": {
