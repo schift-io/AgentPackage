@@ -86,18 +86,117 @@ package interface without making any provider part of the `.apm` format.
 ## Human input and task resumption
 
 `interaction.channel: host-mediated` requires `human_input_channel`.
-The host owns the waiting state, authorization of the responder, validation of
-the submitted payload, and re-entry of the task. The package can describe the
-question in its instructions, but it does not open a socket, create a browser
-form, or define a user identity.
+The host owns the waiting state, responder authorization, response validation,
+and task re-entry. The package can describe a question in its instructions, but
+it does not open a socket, create a browser form, select a responder, or define
+a user identity.
 
-`apm.run.result.v1` uses `input_required` while waiting. A host SHOULD emit a
-`run.input_required` event containing a stable request ID, a human-readable
-prompt, and a JSON-schema-compatible input description. A later
-`run.input_submitted` event MUST name that request ID and MUST be attributed to
-the host-authenticated responder. The host resumes as a new task turn; it MUST
-not splice untrusted input into an earlier hidden prompt or fabricate a
-response.
+### Sealed package input and workspace boundary
+
+Before the first task turn, the host MUST verify the sealed package content hash
+and freeze the execution input: the complete package files, canonical manifest,
+`package_ref`, verified `content_hash`, requested operation, initial task input,
+and accepted runtime contract. Every task turn MUST receive that complete,
+unchanged sealed package input. A host MUST NOT resume from only a generated
+prompt, a partial package directory, or an unverified replacement package.
+
+The host MUST expose the sealed package input read-only and provide a separate
+writable workspace for task output and host-mediated request/response material.
+The package MUST NOT modify its sealed input. The workspace belongs to the run,
+not the package: a host chooses its location, retention, and isolation policy,
+and MUST prevent a resumed turn from reading another run's workspace.
+
+### Request and response records
+
+During a task turn, a package may ask the host for one or more human answers by
+creating a request record. The portable record is:
+
+```json
+{
+  "protocol": "apm.input.request.v1",
+  "id": "input_approval",
+  "questions": [
+    {
+      "id": "approve",
+      "label": "Continue with this action?",
+      "type": "approval",
+      "required": true
+    }
+  ]
+}
+```
+
+`id` and every question `id` MUST be stable, non-empty identifiers within the
+run. `type` is `text`, `select`, or `approval`. A `select` question MUST declare
+non-empty, distinct string `options`; `approval` accepts a boolean response;
+and `required` is a boolean. Hosts MAY render an equivalent native UI, but MUST
+validate the submitted answer against this record before resuming.
+
+The response is host-mediated, not package-authenticated. Its logical shape is
+`{"protocol":"apm.input.response.v1","answers":{...}}`; the host binds it to
+the run and request ID from the command path, API route, or persisted task
+state. A response MUST contain only declared question IDs, satisfy required
+questions, and match the requested types/options. A host MAY deliver the
+validated response to the next task turn through a workspace response record or
+another isolated local mechanism. It MUST NOT expose responder credentials,
+provider credentials, MCP secrets, or authorization headers to the package.
+
+### Run and task-turn state machine
+
+`apm.run.result.v1` uses `input_required` while waiting. Its associated
+`task_turn.state` is `paused`: the current turn has stopped, the request record
+is immutable, and no new package execution occurs until the host accepts a
+response or cancellation.
+
+After accepting one valid, authorized response, the host records the task as
+`resuming` and starts a new task turn with the same sealed package input,
+separate workspace, prior run artifacts, and the validated response. It MUST
+NOT splice untrusted answer bytes into an earlier hidden prompt, alter the
+sealed package, or fabricate a response. `resuming` is a host task state, not a
+new `apm.run.result.v1` status. The new turn either emits another
+`input_required` result with `task_turn.state: paused` or reaches a terminal
+`succeeded`, `failed`, or `cancelled` result.
+
+An authorized responder or host policy MAY cancel a paused request. A declined
+required approval MUST produce terminal `cancelled`; its result error has a
+stable cancellation code such as `human_input_declined`. A cancelled request
+MUST NOT be resumed. Repeating an already accepted identical response MAY be
+idempotent, but a host MUST reject a different response after a terminal result.
+
+### Events and host interfaces
+
+The host SHOULD emit the following metadata-only events:
+
+```json
+{"type":"run.input_required","run_id":"run_01...","input_request_id":"input_approval","task_turn":1,"question_ids":["approve"]}
+{"type":"run.input_submitted","run_id":"run_01...","input_request_id":"input_approval","task_turn":2,"answer_keys":["approve"]}
+```
+
+Events MUST NOT contain answer values, responder credentials or identity
+credentials, provider credentials, MCP secrets, authorization headers, or a
+secret-bearing URL. Hosts may record an answer digest for idempotency, but MUST
+NOT treat that digest as an answer or credential.
+
+A conforming CLI MAY expose the flow as:
+
+```text
+schift apm runwith <sealed-package> --codex --docker --output <run-directory>
+schift apm resume <run-id> --output <run-directory> --input <request-id> --answer <answers.json>
+schift apm cancel <run-id> --output <run-directory> --input <request-id>
+```
+
+These are an adapter-specific reference command shape, not required command
+names. An equivalent host API MAY expose:
+
+```text
+GET  /v1/runs/{run_id}
+POST /v1/runs/{run_id}/input-requests/{request_id}/responses
+POST /v1/runs/{run_id}/input-requests/{request_id}/cancel
+```
+
+The response endpoint accepts a validated `apm.input.response.v1` body; the
+host authenticates the caller outside that body. These are interface shapes,
+not required paths, command names, transport, provider, or runtime choices.
 
 ## CCLG memory transfer
 

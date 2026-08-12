@@ -30,10 +30,43 @@ runner.mode MUST be non-empty strings. content_hash MUST be the verified
 AgentPackage content hash, not a hash of the result JSON.
 
 status is one of accepted, running, input_required, succeeded, failed, rejected,
-or cancelled. input_required is non-terminal: the host is waiting for an
-authorized human input submission and MUST retain the run/task identity needed
-to resume a new turn. It MUST NOT be represented as succeeded, failed, or an
-implicit empty answer.
+or cancelled. `input_required` is non-terminal: the host has paused the current
+task turn for an authorized human response and MUST retain the run/task identity
+needed to resume a new turn. It MUST NOT be represented as succeeded, failed,
+or an implicit empty answer. `paused` and `resuming` are task-turn states, not
+additional result statuses; a host MAY publish them in an additive
+`metadata.task_turn` object.
+
+An `input_required` envelope for a package declaring
+`runtime_contract.interaction` SHOULD include these additive fields:
+
+```json
+{
+  "input_request": {
+    "protocol": "apm.input.request.v1",
+    "id": "input_approval",
+    "questions": [
+      {"id": "approve", "label": "Continue?", "type": "approval", "required": true}
+    ]
+  },
+  "metadata": {
+    "task_turn": {
+      "state": "paused",
+      "number": 1,
+      "input_request_id": "input_approval"
+    }
+  }
+}
+```
+
+`input_request` is the request record for the current pause, not a response.
+The host validates and binds a response to its `run.id` and request ID before it
+starts a new task turn. Response values and responder authorization material are
+not result-envelope fields.
+
+`cancelled` is terminal. A human-declined required approval or an authorized
+host cancellation MUST return `status: "cancelled"` with a stable error code and
+human-readable message. A cancelled request cannot be resumed.
 A final succeeded result MUST have error null. A terminal non-success result MUST
 include an error object with stable code and human-readable message.
 
@@ -42,8 +75,9 @@ and path rules are defined in artifact-results.md. Unknown additive fields MUST
 be ignored by readers; writers MUST preserve required field meanings.
 
 When a package requires `runtime_contract.interaction`, the event stream SHOULD
-include `run.input_required` with a stable request ID, prompt, and input schema,
-followed by `run.input_submitted` carrying the same request ID after host-side
-authorization and validation. The event payload MUST NOT contain a responder's
-credential or a provider/MCP secret. See runtime-services-v1.md for the
-interaction and A2A state mapping.
+include `run.input_required` with a stable request ID, task-turn number, and
+non-secret request metadata, followed by `run.input_submitted` carrying the
+same request ID after host-side authorization and validation. Events MUST NOT
+contain answer values, responder credentials, provider credentials, MCP secrets,
+or authorization headers. See runtime-services-v1.md for the request/response,
+workspace, state-transition, and host-interface contract.
