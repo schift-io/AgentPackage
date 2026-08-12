@@ -1,0 +1,85 @@
+{
+  "agent_id": "gongnangi-chart",
+  "name": "gongnangi-chart",
+  "display_name": "Gongnangi Chart Skill",
+  "version": "0.1.0",
+  "package_ref": "gongnangi-chart@0.1.0",
+  "description": "Consulting-style charts, card-news HTML, and animated chart source generation.",
+  "runtime_boundary": {
+    "host_services_only": [
+      "model_inference_adapter",
+      "isolated_sandbox"
+    ]
+  },
+  "protocol": {
+    "version": "0.1.0",
+    "result": "apm.run.result.v1"
+  },
+  "runner": {
+    "selection": "capability_match",
+    "modes": [
+      "local",
+      "isolated"
+    ]
+  },
+  "execution": {
+    "default_mode": "isolated"
+  },
+  "permissions": {
+    "requires": {
+      "scopes": []
+    }
+  },
+  "artifacts": {
+    "declared": [
+      {
+        "name": "chart-source",
+        "path": "artifacts/chart-source/",
+        "media_type": "text/html"
+      },
+      {
+        "name": "rendered-image",
+        "path": "artifacts/rendered-image/",
+        "media_type": "image/png"
+      },
+      {
+        "name": "rendered-animation",
+        "path": "artifacts/rendered-animation/",
+        "media_type": "video/mp4"
+      }
+    ]
+  },
+  "agents": [
+    {
+      "id": "gongnangi-chart/agent.md",
+      "path": "agent.md"
+    }
+  ],
+  "pipeline": "react",
+  "runtime_contract": {
+    "version": "apm.runtime.services.v1",
+    "model": {
+      "interface": "chat.v1",
+      "selection": "host",
+      "input_modes": [
+        "text/plain",
+        "application/json"
+      ],
+      "output_modes": [
+        "text/plain",
+        "text/html",
+        "application/json"
+      ]
+    },
+    "sandbox": {
+      "mode": "isolated",
+      "package_network": "none",
+      "model_egress": "none"
+    }
+  },
+  "upstream": {
+    "repository": "https://github.com/gongnyang/gongnangi-chart-skill",
+    "commit": "6c3ec70ebf37f6de3764a5dd9fd3dd632b05881c",
+    "license": "MIT"
+  }
+}
