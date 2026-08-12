@@ -5,7 +5,7 @@
 > 내가 만든 에이전트를, 다른 사람이 가진 Runtime에서, 같은 계약으로 실행한다.
 
 APM(Agent Package)은 에이전트를 Git에서 만들고, 검증된 배포 아티팩트로 봉인해
-서로 다른 Runtime에서 실행하기 위한 **공개 패키지 규약과 정본 키트**다.
+서로 다른 Runtime에서 실행하기 위한 **source-available 패키지 규약과 정본 키트**다.
 
 APM이 해결하는 문제는 간단하다. 프롬프트와 스킬은 내 컴퓨터에 있는데 모델,
 검색, MCP, 메모리, 이미지 생성, 샌드박스는 다른 사람의 서버에 있을 수 있다.
@@ -235,7 +235,7 @@ Runtime 설정은 패키지 계약과 분리한다. 예를 들어 `env.AI`, `R2_
 APM이 정하는 것은 패키지의 내용과 실행 전 계약이다. adapter가 정하는 것은
 구체적인 provider SDK, credential, 배포 방식, 비용 계량, 격리 구현이다. 따라서
 Schift를 사용하지 않아도 APM 규약을 구현할 수 있고, Schift Runtime을 사용해도
-패키지 자체는 공개 포맷으로 교환할 수 있다.
+패키지 자체는 같은 APM 계약으로 교환할 수 있다.
 
 ### Agent Plugins · A2A를 기본 호환 profile로 채택
 
@@ -267,22 +267,25 @@ external search/data, governed MCP, and isolation rules are
 
 ## 규약과 상용 서비스의 경계
 
-이 저장소의 규약, `apm-kit`, 예제, 그리고 패키지 포맷은 [`LICENSE`](LICENSE)에
-따라 공개한다. 공개 규약을 누구나 검증하고 구현할 수 있어야 생태계가 성립한다.
+이 저장소는 **PolyForm Small Business License 1.0.0**을 사용한다. 소스와 규약은
+읽고 검토할 수 있지만 OSI 의미의 오픈소스는 아니다. 회사의 직전 회계연도 총매출이
+미화 1,000,000달러 미만이고 직원·독립계약자를 합친 인원이 100명 미만인 경우에만
+회사 목적의 무료 사용이 허용된다. 그 기준을 넘는 조직은 별도 상용 라이선스를
+받아야 한다. 자세한 권리·의무는 [`LICENSE`](LICENSE) 원문을 따른다.
 
-대기업 사용만 허용하거나 상업적 사용에 별도 제한을 거는 조건은 OSI 의미의
-오픈소스 라이선스와 양립하지 않는다. 따라서 상용화는 규약을 잠그는 방식이
-아니라 다음과 같이 **Runtime 서비스의 가치**를 분리하는 방향을 취한다.
+이 경계를 둔 이유는 **프로토콜을 공개해 생태계를 만들되, 일정 규모 이상의 조직이
+운영·상업적 가치에 기여하도록 하는 것**이다. 라이선스 기준은 “대기업”처럼
+모호한 표현이 아니라 매출과 인원으로 판정한다.
+
+별도 상용 라이선스의 대상은 다음과 같다.
 
 - managed Runtime 실행, SLA, 지원, 조직·권한·감사, 과금·usage ledger
 - private connector, enterprise identity, 전용 sandbox와 배포 adapter
 - Schift Cloud 또는 고객사 전용 운영 환경
 
-이 레포의 공개 규약을 제한하는 상업 라이선스를 도입하려면 먼저 라이선스 명칭과
-권리를 다시 정의해야 한다. 그런 경우 “오픈소스”라고 부르지 않고
-source-available 또는 commercial source license로 명확히 구분해야 하며,
-법률 검토가 필요하다. 현재 README가 설명하는 기본선은 **공개 APM 규약 + 별도
-상용 Runtime/운영 서비스**다.
+이 라이선스는 법률 자문이 아니며, 공개 전 관할권별 검토가 필요하다. 특히 회사
+규모 판정, 계열사 합산, 재배포, 특허, 상표, APM 규약을 구현한 독립 구현체의 권리는
+상용 계약에서 명확히 정해야 한다.
 
 ## 호스트 능력 계약
 
@@ -308,7 +311,7 @@ python3 kit/apm_kit.py market                   # marketplace.json 생성
 
 ## 발행은 fail-closed
 
-이 repo는 **공개 규약·키트 정본**이다. 실제 조직 전용 팩은 별도 private/public
+이 repo는 **source-available 규약·키트 정본**이다. 실제 조직 전용 팩은 별도 private/public
 repository에서 관리할 수 있고, `marketplace.json`은 공개 배포할 팩의 source를
 가리키기만 한다. 이 repo에 조직 전용 콘텐츠를 넣지 않는 것이 원칙이다.
 

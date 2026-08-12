@@ -3,10 +3,10 @@
 이 문서가 **`.apm` 의 규범적 사양**이다. 여기 적힌 것과 구현이 다르면 **구현이 버그**다.
 README 는 "왜 이 포맷인가"를 논증하고, 이 문서는 "무엇이 참인가"를 정의한다.
 
-- 상태: **v1, 공개 오픈소스 사양**. 서명은 아직 없다(§9).
+- 상태: **v1, source-available 사양**. 서명은 아직 없다(§9).
 - 정본 구현: `kit/apm_codec.py`(컨테이너·해시) · `kit/capabilities.json`(능력 어휘) ·
   `kit/apm_kit.py`(검증·빌드 CLI).
-- 라이선스: Apache-2.0 (`LICENSE`).
+- 라이선스: PolyForm Small Business License 1.0.0 (`LICENSE`). OSI 오픈소스 라이선스가 아니다.
 
 > ⚠️ **이름 충돌.** 이 `APM` 은 **Agent Package** — 봉인된 단일 아티팩트 포맷이다.
 > [`microsoft/apm`](https://github.com/microsoft/apm)("Agent Package Manager", npm 식
