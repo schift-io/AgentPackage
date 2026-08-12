@@ -273,7 +273,25 @@ class RuntimeContractTests(unittest.TestCase):
                 "A2A card required skill list",
                 Path("a2a/agent-card.template.json"),
                 lambda component: component.pop("skills"),
-                "A2A Agent Card template must declare 'skills'",
+                "A2A Agent Card template skills must be a non-empty list",
+            ),
+            (
+                "A2A card capabilities shape",
+                Path("a2a/agent-card.template.json"),
+                lambda component: component.__setitem__("capabilities", []),
+                "A2A Agent Card template capabilities must be an object",
+            ),
+            (
+                "A2A card mode shape",
+                Path("a2a/agent-card.template.json"),
+                lambda component: component.__setitem__("defaultInputModes", ["", 1]),
+                "A2A Agent Card template defaultInputModes must be a non-empty list of strings",
+            ),
+            (
+                "A2A card skill shape",
+                Path("a2a/agent-card.template.json"),
+                lambda component: component.__setitem__("skills", ["not-an-object"]),
+                "A2A Agent Card template skills[0] must be an object",
             ),
         )
 
@@ -313,7 +331,8 @@ class RuntimeContractTests(unittest.TestCase):
         problems = validate_runtime_contract(manifest, package_files=files)
 
         self.assertIn(
-            "A2A Agent Card template must declare 'defaultOutputModes'", problems
+            "A2A Agent Card template defaultOutputModes must be a non-empty list of strings",
+            problems,
         )
 
     def test_host_capability_check_is_positive_for_docker_subset_and_fail_closed_for_full_fixture(self) -> None:

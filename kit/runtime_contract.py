@@ -466,6 +466,33 @@ def _validate_a2a_card_template_document(
     for key in ("name", "description", "version"):
         if not isinstance(card.get(key), str) or not card[key].strip():
             problems.append(f"A2A Agent Card template must declare a non-empty {key!r}")
-    for key in ("capabilities", "skills", "defaultInputModes", "defaultOutputModes"):
-        if key not in card:
-            problems.append(f"A2A Agent Card template must declare {key!r}")
+    if not isinstance(card.get("capabilities"), dict):
+        problems.append("A2A Agent Card template capabilities must be an object")
+    for key in ("defaultInputModes", "defaultOutputModes"):
+        _nonempty_string_list(
+            card.get(key), f"A2A Agent Card template {key}", problems
+        )
+
+    skills = card.get("skills")
+    if not isinstance(skills, list) or not skills:
+        problems.append("A2A Agent Card template skills must be a non-empty list")
+        return
+    seen: set[str] = set()
+    for index, skill in enumerate(skills):
+        label = f"A2A Agent Card template skills[{index}]"
+        if not isinstance(skill, dict):
+            problems.append(f"{label} must be an object")
+            continue
+        identifier = skill.get("id")
+        if not isinstance(identifier, str) or not identifier.strip():
+            problems.append(f"{label}.id must be a non-empty string")
+        elif identifier in seen:
+            problems.append(f"{label}.id duplicates {identifier!r}")
+        else:
+            seen.add(identifier)
+        for key in ("name", "description"):
+            if not isinstance(skill.get(key), str) or not skill[key].strip():
+                problems.append(f"{label}.{key} must be a non-empty string")
+        _nonempty_string_list(skill.get("tags"), f"{label}.tags", problems)
+        for key in ("examples", "inputModes", "outputModes"):
+            _string_list(skill.get(key), f"{label}.{key}", problems)
