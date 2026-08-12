@@ -1,0 +1,10 @@
+name: portable-hello
+display_name: "Portable Hello Agent"
+version: 0.1.0
+description: "A runtime-neutral AgentPackage CLI fixture."
+runtime_boundary:
+  host_services_only: []
+pipeline: react
+agents:
+  - id: portable-hello/agent.md
+    path: agent.md

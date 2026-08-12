@@ -1,5 +1,23 @@
 # Examples
 
+## `portable.agent`
+
+`portable.agent/` is the smallest fixture with both authoring and canonical
+manifest forms. It is intentionally vendor-, tenant-, and runtime-neutral and
+is the example used by the public CLI distribution contract:
+[`docs/cli-distribution.md`](../docs/cli-distribution.md).
+
+```bash
+python3 kit/apm_kit.py lint portable.agent --packs-dir examples
+python3 kit/apm_kit.py check portable.agent --host local-byo --packs-dir examples
+python3 kit/apm_kit.py build portable.agent --packs-dir examples --out /tmp/apm-dist
+```
+
+The resulting `.apm` is the only artifact a registry or Runtime adapter should
+consume. [`registry-metadata.json`](registry-metadata.json) shows the separate
+registration payload shape; its zero hash and size are documentation
+placeholders, not a publishable artifact.
+
 ## `hello.agent`
 
 The smallest portable package. It has no Schift, Cloudflare, provider, or
