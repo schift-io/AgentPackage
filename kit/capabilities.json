@@ -198,6 +198,11 @@
       "transport": "in_process",
       "metered_by": "none"
     },
+    "scoped_connector_proxy": {
+      "desc": "작업별 API만 제공하는 호스트 중개 connector bridge",
+      "transport": "in_process",
+      "metered_by": "none"
+    },
     "agent_plugins_runtime": {
       "desc": "Agent Plugins 1.0 Skills/MCP component discovery runtime",
       "transport": "in_process",
@@ -289,12 +294,14 @@
       ]
     },
     "docker-codex-isolated": {
-      "description": "Docker Codex reference development adapter. It supports host-mediated human input through validated request/response task turns with sealed package input and a separate workspace; it has no direct package network and optional provider-only proxy egress. It does not provide CCLG, search, MCP, Agent Plugins component loading, or A2A transport.",
+      "description": "Docker Codex reference development adapter. It supports host-mediated human input and operation-limited public web search through validated task-turn and connector APIs with sealed package input and a separate workspace; it has no direct package network and optional provider-only proxy egress. It does not provide CCLG, connected-source search/fetch, MCP, Agent Plugins component loading, or A2A transport.",
       "provides": [
         "model_inference_adapter",
         "human_input_channel",
         "isolated_sandbox",
-        "provider_egress_proxy"
+        "provider_egress_proxy",
+        "web_search_connector",
+        "scoped_connector_proxy"
       ]
     }
   },

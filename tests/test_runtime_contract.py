@@ -47,6 +47,7 @@ class RuntimeContractTests(unittest.TestCase):
                 "isolated_sandbox",
                 "model_inference_adapter",
                 "provider_egress_proxy",
+                "scoped_connector_proxy",
                 "scoped_mcp_binding",
                 "web_search_connector",
             },
@@ -64,6 +65,22 @@ class RuntimeContractTests(unittest.TestCase):
         problems = validate_runtime_contract(manifest)
 
         self.assertTrue(any("model_inference_adapter" in problem for problem in problems))
+
+    def test_data_contract_cannot_hide_the_scoped_connector_boundary(self) -> None:
+        manifest = {
+            "runtime_boundary": {"host_services_only": ["web_search_connector"]},
+            "runtime_contract": {
+                "version": "apm.runtime.services.v1",
+                "data": {
+                    "web_search": "host-mediated",
+                    "connected_sources": {"search": "none", "fetch": "none"},
+                },
+            },
+        }
+
+        problems = validate_runtime_contract(manifest)
+
+        self.assertTrue(any("scoped_connector_proxy" in problem for problem in problems))
 
     def test_runtime_ref_is_logical_and_provider_neutral(self) -> None:
         manifest = {

@@ -206,7 +206,8 @@ adapter를 추가해도 `.apm` 포맷을 바꿀 필요가 없어야 한다.
   - `agent-hub` — 검증된 기존 Cloud capability 목록
   - `local-byo` — 검증된 기존 로컬 capability 목록(과금·서버 워커 제외)
   - `docker-codex-isolated` — `model_inference_adapter`, `isolated_sandbox`,
-    `provider_egress_proxy`만 제공; CCLG/search/MCP/A2A/Agent Plugins는 별도 adapter 전까지 거절
+    `provider_egress_proxy`, `web_search_connector`, `scoped_connector_proxy`를 제공한다.
+    검색은 operation-limited host bridge를 거쳐야 하며, CCLG/연결 데이터 source search·fetch/MCP/A2A/Agent Plugins는 별도 adapter 전까지 거절한다.
 - ⚠️ **호스트 프로필은 소비자 구현과 반드시 같아야 한다.** 갈리면 느슨한 쪽이 아니라
   **엄격한 쪽**에 맞춘다 — 느슨한 쪽이 정본이 되면 팩 저자는 `check` 통과를 보고도
   실제로는 못 도는 팩을 낸다(2026-08-10 실측: 어휘는 28/28 같은데 `local-byo` 만

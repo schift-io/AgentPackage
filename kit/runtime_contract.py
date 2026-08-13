@@ -53,15 +53,21 @@ def runtime_required_capabilities(manifest: dict[str, Any]) -> set[str]:
             required.add("cclg_memory_candidate_write")
 
     data = contract.get("data")
+    requires_scoped_connector = False
     if isinstance(data, dict):
         if data.get("web_search") not in (None, "none"):
             required.add("web_search_connector")
+            requires_scoped_connector = True
         connected = data.get("connected_sources")
         if isinstance(connected, dict):
             if connected.get("search") not in (None, "none"):
                 required.add("connected_source_search_connector")
+                requires_scoped_connector = True
             if connected.get("fetch") not in (None, "none"):
                 required.add("connected_source_fetch_connector")
+                requires_scoped_connector = True
+    if requires_scoped_connector:
+        required.add("scoped_connector_proxy")
 
     mcp = contract.get("mcp")
     if isinstance(mcp, dict) and mcp.get("bindings"):

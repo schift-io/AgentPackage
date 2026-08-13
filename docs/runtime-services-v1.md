@@ -24,6 +24,7 @@ runtime_boundary:
     - web_search_connector
     - connected_source_search_connector
     - connected_source_fetch_connector
+    - scoped_connector_proxy
     - scoped_mcp_binding
     - isolated_sandbox
     - provider_egress_proxy
@@ -228,6 +229,14 @@ identity and citation metadata supplied by the host. A host may deny a request
 because a caller lacks a connector grant even when it supports the capability
 in general.
 
+Any non-`none` data operation also requires `scoped_connector_proxy`. This is
+the host-owned operation boundary, not an HTTPS CONNECT tunnel: it exposes only
+the declared operation through a local typed API and never accepts an arbitrary
+upstream URL, hostname, request headers, credential, or provider base URL from
+the package. A Docker development adapter may implement public web search with
+this bridge, but connected-source search and fetch remain unavailable until the
+host supplies tenant-scoped connector authorization and opaque source IDs.
+
 ## Governed MCP bindings
 
 `mcp.bindings` requires `scoped_mcp_binding`. Each entry has only an identifier,
@@ -269,6 +278,7 @@ plain Docker bridge or host network as this contract's `provider-proxy` mode.
 | `data.web_search != none` | `web_search_connector` |
 | `data.connected_sources.search != none` | `connected_source_search_connector` |
 | `data.connected_sources.fetch != none` | `connected_source_fetch_connector` |
+| any non-`none` `data` operation | `scoped_connector_proxy` |
 | non-empty `mcp.bindings` | `scoped_mcp_binding` |
 | `sandbox.mode: isolated` | `isolated_sandbox` |
 | `sandbox.model_egress: provider-proxy` | `provider_egress_proxy` |

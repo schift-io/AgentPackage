@@ -11,6 +11,7 @@ runtime_boundary:
     - web_search_connector
     - connected_source_search_connector
     - connected_source_fetch_connector
+    - scoped_connector_proxy
     - scoped_mcp_binding
     - isolated_sandbox
     - provider_egress_proxy
