@@ -8,7 +8,11 @@
       "auth": {
         "type": "gcp-oidc",
         "audience": "https://SERVICE_NAME-HASH-REGION.run.app",
-        "invoker_service_account": "RUNTIME_INVOKER@PROJECT_ID.iam.gserviceaccount.com"
+        "invoker_service_account": "RUNTIME_INVOKER@PROJECT_ID.iam.gserviceaccount.com",
+        "credential_ref": "env:APM_HUMAN_INPUT_RUNTIME_SECRET",
+        "parameters": {
+          "application_secret_header": "x-apm-human-input-runtime-secret"
+        }
       },
       "capabilities": [
         "human_input_channel",

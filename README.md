@@ -68,7 +68,8 @@ Runtime은 `.agent`의 내부 구현을 직접 알지 않고 `.apm`의 선언과
 `apm://runtime/<name>@<semver>`만 기록한다. Cloud Run resource name, Lambda ARN,
 Cloudflare Worker binding, endpoint, token audience, secret은 패키지 밖의 deployment
 binding으로 해석한다. 즉 같은 `.apm` hash를 유지한 채 어느 cloud/local adapter에
-연결할지 바꿀 수 있다. 상세 규약은 [`docs/runtime-binding.md`](docs/runtime-binding.md)다.
+연결할지 바꿀 수 있다. 상세 규약은 [`docs/runtime-binding.md`](docs/runtime-binding.md)와
+[`docs/runtime-invocation.md`](docs/runtime-invocation.md)다.
 
 `.zip`처럼 파일까지 통째로 봉인하고, content-hash가 곧 주소이며, 요구하는 호스트
 능력을 스스로 선언한다. 같은 팩이 **Schift, Cloudflare Workers, 로컬 Runtime,

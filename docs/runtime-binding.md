@@ -83,7 +83,7 @@ descriptors while keeping the actual value in its secret manager or local keycha
 
 | Deployment | Typical `resource` identity | Invocation authority | Adapter status |
 |---|---|---|---|
-| Google Cloud Run | `projects/<project>/locations/<region>/services/<service>` | `gcp-oidc` + `roles/run.invoker` | Reference binding validator and Schift CLI resolver |
+| Google Cloud Run | `projects/<project>/locations/<region>/services/<service>` | `gcp-oidc` + `roles/run.invoker` | Reference binding validator, resolver, and task-turn invocation adapter |
 | AWS Lambda | Lambda ARN or function URL identity | SigV4/role chosen by the adapter | Same binding shape; invocation adapter is provider-owned |
 | Cloudflare Workers | Worker/service identity | Worker service binding or service token | Same binding shape; invocation adapter is provider-owned |
 | Vercel Functions | Project/function deployment identity | deployment-scoped credential chosen by the adapter | Same binding shape; invocation adapter is provider-owned |
@@ -108,6 +108,13 @@ binding document, and prints a credential-free `apm.runtime.resolution.v1` plan.
 It never fetches an OAuth token, reads a secret value, or executes an agent. A
 runtime adapter consumes that plan only after its own caller authorization and
 provider-specific credential checks pass.
+
+The current Schift CLI Cloud Run invocation adapter uses the task-turn contract
+in [`runtime-invocation.md`](runtime-invocation.md). It sends an OIDC token from
+an explicit local token file (or `APM_RUNTIME_ID_TOKEN`) and resolves an
+application secret only from `auth.credential_ref` or an explicit local secret
+file. It does not obtain, serialize, or print either credential. Other provider
+rows remain binding-compatible but require their own invocation adapter.
 
 [`../examples/runtime-bindings/cloud-run.json`](../examples/runtime-bindings/cloud-run.json)
 is a non-deployable placeholder template. Copy it into deployment configuration;

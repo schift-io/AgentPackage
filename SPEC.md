@@ -184,7 +184,10 @@ host-mediated data/MCP, 격리 sandbox, Agent Plugins/A2A 호환을 같은 방�
 Cloud Run URL, Lambda ARN, Worker route, service account, token audience, secret은
 모두 deployment-owned `apm.runtime.binding.v1` 문서에 둔다. 따라서 같은 `.apm`의
 content hash를 바꾸지 않고 provider를 교체할 수 있다. binding 문서의 규범적 shape와
-Cloud Run 예시는 [`docs/runtime-binding.md`](docs/runtime-binding.md)에 있다.
+Cloud Run 예시는 [`docs/runtime-binding.md`](docs/runtime-binding.md)에 있다. binding
+해석 뒤의 one-task-turn start/resume wire, public result, private checkpoint, stateless
+Runtime와 durable control-plane 경계는
+[`docs/runtime-invocation.md`](docs/runtime-invocation.md)에 있다.
 
 필수 capability를 제공하지 못하는 호스트는 실행 전에 fail-closed로 거절해야 한다.
 어떤 호스트가 capability를 제공하는지는 공개 포맷의 고정 목록이 아니며, 새 Runtime
