@@ -244,6 +244,15 @@ APM이 정하는 것은 패키지의 내용과 실행 전 계약이다. adapter�
 Schift를 사용하지 않아도 APM 규약을 구현할 수 있고, Schift Runtime을 사용해도
 패키지 자체는 같은 APM 계약으로 교환할 수 있다.
 
+`runtime_ref` binding과 task-turn transport는 Cloud Run, AWS Lambda,
+Cloudflare Workers, Vercel Edge, Supabase Edge, local, custom Runtime에 같은
+형태로 적용한다. Cloud Run과 Lambda reference adapter는 패키지 실행 Runtime을
+대상으로 하고, Worker/Vercel/Supabase reference adapter는 현재 sealed transport,
+private checkpoint, host-mediated input, redaction만 검증하는 Edge conformance
+canary다. Edge canary는 Docker sandbox나 model inference를 제공한다고 주장하지
+않는다. 상세 binding 형식은 [`docs/runtime-binding.md`](docs/runtime-binding.md),
+wire contract는 [`docs/runtime-invocation.md`](docs/runtime-invocation.md)를 따른다.
+
 ### Agent Plugins · A2A를 기본 호환 profile로 채택
 
 APM은 자체 플러그인 포맷이나 agent-to-agent wire protocol을 만들지 않는다.

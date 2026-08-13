@@ -79,21 +79,30 @@ credentials and adapter implementation details. A provider can use `auth.type`,
 `auth.principal`, `auth.credential_ref`, and `auth.parameters` as non-secret
 descriptors while keeping the actual value in its secret manager or local keychain.
 
+`auth.parameters.application_secret_header` is a Runtime-owned, safe header
+name; the actual value is resolved from the host-only `credential_ref`. When a
+provider mounts a function beneath its HTTPS origin, its binding may also use
+`auth.parameters.invoke_path_prefix`. It is a strict absolute path prefix with
+normal path segments only, such as `/api/apm` or `/apm-task-turn`; it is never
+package input and never a caller-selected URL.
+
 ## Provider mapping
 
-| Deployment | Typical `resource` identity | Invocation authority | Adapter status |
+| Deployment | `resource` identity | Invocation authority | Invocation/profile |
 |---|---|---|---|
-| Google Cloud Run | `projects/<project>/locations/<region>/services/<service>` | `gcp-oidc` + `roles/run.invoker` | Reference binding validator, resolver, and task-turn invocation adapter |
-| AWS Lambda | Lambda ARN or function URL identity | SigV4/role chosen by the adapter | Same binding shape; invocation adapter is provider-owned |
-| Cloudflare Workers | Worker/service identity | Worker service binding or service token | Same binding shape; invocation adapter is provider-owned |
-| Vercel Functions | Project/function deployment identity | deployment-scoped credential chosen by the adapter | Same binding shape; invocation adapter is provider-owned |
-| Supabase Edge | project/function identity | project-scoped credential chosen by the adapter | Same binding shape; invocation adapter is provider-owned |
+| Google Cloud Run | `projects/<project>/locations/<region>/services/<service>` | `gcp-oidc` + `roles/run.invoker` | Full task-turn HTTP invocation adapter |
+| AWS Lambda | `arn:aws:lambda:<region>:<account>:function:<name>` | caller AWS workload identity / profile | Full task-turn invocation through `aws lambda invoke`; `auth.type: aws-lambda-invoke` |
+| Cloudflare Workers | `accounts/<account>/workers/services/<worker>` | Runtime application secret | Edge task-turn transport canary; `auth.type: http-header-secret`; not a package executor |
+| Vercel Edge | `projects/<project>/functions/<route>` | Runtime application secret | Edge task-turn transport canary; `http-header-secret` plus `/api/apm`-style `invoke_path_prefix`; not a package executor |
+| Supabase Edge | `projects/<project-ref>/functions/<function>` | Runtime application secret | Edge task-turn transport canary; `http-header-secret` plus function `invoke_path_prefix`; not a package executor |
 | local host | no external binding; capability-selected host profile | local process/keychain | `runwith`/local adapter selects by capability |
 | custom remote Runtime | adapter-defined resource identity | adapter-defined credential | Same binding shape; invocation adapter is provider-owned |
 
-“Same binding shape” does not mean every provider adapter is already implemented.
-An adapter must reject an unresolved or unsupported binding rather than silently
-fall back to a different provider.
+The edge rows intentionally prove transport semantics rather than computational
+isolation. Their capability response must say that package execution and model
+calls are disabled. A full package run belongs on a container Runtime such as
+Cloud Run or Lambda. Every adapter rejects an unresolved or unsupported binding
+rather than silently falling back to a different provider.
 
 ## CLI resolution contract
 
@@ -109,13 +118,17 @@ It never fetches an OAuth token, reads a secret value, or executes an agent. A
 runtime adapter consumes that plan only after its own caller authorization and
 provider-specific credential checks pass.
 
-The current Schift CLI Cloud Run invocation adapter uses the task-turn contract
-in [`runtime-invocation.md`](runtime-invocation.md). It sends an OIDC token from
-an explicit local token file (or `APM_RUNTIME_ID_TOKEN`) and resolves an
-application secret only from `auth.credential_ref` or an explicit local secret
-file. It does not obtain, serialize, or print either credential. Other provider
-rows remain binding-compatible but require their own invocation adapter.
+The Schift CLI installs the Cloud Run, Lambda, Cloudflare Worker, Vercel Edge,
+and Supabase Edge transports defined above. Cloud Run sends an OIDC token from
+an explicit local token file (or `APM_RUNTIME_ID_TOKEN`); Lambda uses the
+caller's AWS CLI/workload identity and needs no OIDC token file; the three edge
+transports send only the binding-selected application-secret header. All resolve
+the secret only from `auth.credential_ref` or an explicit local secret file and
+never serialize or print it.
 
 [`../examples/runtime-bindings/cloud-run.json`](../examples/runtime-bindings/cloud-run.json)
-is a non-deployable placeholder template. Copy it into deployment configuration;
-do not replace its placeholders in a public package repository.
+and the sibling `aws-lambda.json`, `cloudflare-worker.json`, `vercel-edge.json`,
+and `supabase-edge.json` are syntactically valid fictional examples. Copy one
+into private deployment configuration and replace every provider identity; do
+not put live project, account, endpoint, or secret values in a public package
+repository.

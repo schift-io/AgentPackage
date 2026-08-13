@@ -3,12 +3,12 @@
   "bindings": {
     "apm://runtime/human-input-runner@0.1.0": {
       "provider": "gcp-cloud-run",
-      "resource": "projects/PROJECT_ID/locations/REGION/services/SERVICE_NAME",
-      "invoke_url": "https://SERVICE_NAME-HASH-REGION.run.app",
+      "resource": "projects/example-project/locations/asia-northeast3/services/apm-human-input-runner",
+      "invoke_url": "https://apm-human-input-runner-example-uc.a.run.app",
       "auth": {
         "type": "gcp-oidc",
-        "audience": "https://SERVICE_NAME-HASH-REGION.run.app",
-        "invoker_service_account": "RUNTIME_INVOKER@PROJECT_ID.iam.gserviceaccount.com",
+        "audience": "https://apm-human-input-runner-example-uc.a.run.app",
+        "invoker_service_account": "apm-runtime-invoker@example-project.iam.gserviceaccount.com",
         "credential_ref": "env:APM_HUMAN_INPUT_RUNTIME_SECRET",
         "parameters": {
           "application_secret_header": "x-apm-human-input-runtime-secret"

@@ -119,6 +119,25 @@ the binding, `.apm`, public result, or checkpoint. `auth.parameters` is owned
 by the selected Runtime adapter; the `application_secret_header` above is not
 a global package field.
 
+## Installed provider transports
+
+The sealed package and HTTP-shaped task-turn body stay unchanged across these
+transports. Only binding-owned routing and caller authority change.
+
+| Provider | CLI action | Binding requirements | Runtime claim |
+| --- | --- | --- | --- |
+| `gcp-cloud-run` | HTTPS POST to `invoke_url` | `gcp-oidc`, audience equal to origin, caller OIDC token | Package-executing container Runtime when its capabilities advertise it |
+| `aws-lambda` | `aws lambda invoke` with an API Gateway v2-shaped event | Lambda ARN resource, `aws-lambda-invoke`, application secret header | Package-executing Lambda container Runtime when its capabilities advertise it |
+| `cloudflare-worker` | HTTPS POST to the Worker origin | `http-header-secret`, root-mounted endpoint | Edge transport conformance canary only, unless another Worker Runtime advertises package execution |
+| `vercel-edge` | HTTPS POST to the deployment origin plus `invoke_path_prefix` | `http-header-secret`, safe prefix such as `/api/apm` | Edge transport conformance canary only |
+| `supabase-edge` | HTTPS POST to the function origin plus `invoke_path_prefix` | `http-header-secret`, safe prefix such as `/apm-task-turn` | Edge transport conformance canary only |
+
+The Lambda transport uses the AWS caller identity to invoke the function. It
+does not put AWS keys in a package, binding, or client state. An edge
+conformance adapter validates package bytes and checkpoint integrity but does
+not execute the package or call a model. It must advertise that limitation,
+rather than implying that a task-turn transport proof is a sandbox proof.
+
 ## Stateless Runtime and durable control plane
 
 An invocation Runtime can be request-ephemeral and scale to zero. In that

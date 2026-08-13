@@ -114,9 +114,11 @@ base invocation URL, non-secret authentication descriptor, and the capability se
 the binding actually provides. It must live with deployment configuration or a
 credential store, never in `apm.yml`, `pack.json`, or a sealed `.apm` artifact.
 
-The first concrete profile is `gcp-cloud-run` with a Cloud Run resource name and
-Google OIDC audience. Lambda, Cloudflare Workers, Vercel Functions, Supabase Edge,
-and custom remote adapters use the same logical-ref boundary but own their provider
-invocation implementation. A local adapter selects directly by capability and does
-not need an external HTTPS binding. See [`runtime-binding.md`](runtime-binding.md)
-for the full shape, capability gate, and CLI resolution contract.
+Concrete task-turn profiles are `gcp-cloud-run` (private OIDC HTTP invocation)
+and `aws-lambda` (private `aws lambda invoke` with a Lambda function ARN). The
+Cloudflare Worker, Vercel Edge, and Supabase Edge reference adapters use the
+same logical-ref boundary for a request-ephemeral task-turn transport canary;
+they do not claim Docker, package execution, or model egress. Local and custom
+remote adapters own their provider credentials and deployment behavior. See
+[`runtime-binding.md`](runtime-binding.md) for the full shape, capability gate,
+and CLI resolution contract.

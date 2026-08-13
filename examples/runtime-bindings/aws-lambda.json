@@ -1,0 +1,21 @@
+{
+  "version": "apm.runtime.binding.v1",
+  "bindings": {
+    "apm://runtime/human-input-runner@0.1.0": {
+      "provider": "aws-lambda",
+      "resource": "arn:aws:lambda:ap-northeast-2:123456789012:function:apm-human-input-runner",
+      "invoke_url": "https://apm-human-input-runner.lambda-url.ap-northeast-2.on.aws",
+      "auth": {
+        "type": "aws-lambda-invoke",
+        "principal": "host AWS CLI profile or workload role",
+        "credential_ref": "env:APM_HUMAN_INPUT_RUNTIME_SECRET",
+        "parameters": {
+          "application_secret_header": "x-apm-human-input-runtime-secret"
+        }
+      },
+      "capabilities": [
+        "human_input_channel"
+      ]
+    }
+  }
+}

@@ -149,6 +149,91 @@ class RuntimeContractTests(unittest.TestCase):
             any("audience must equal" in problem for problem in validate_runtime_binding_document(document))
         )
 
+    def test_provider_bindings_validate_native_identity_and_secret_transport(self) -> None:
+        cases = (
+            (
+                "aws-lambda",
+                "arn:aws:lambda:ap-northeast-2:123456789012:function:apm-runner",
+                "https://example.lambda-url.ap-northeast-2.on.aws",
+                "aws-lambda-invoke",
+            ),
+            (
+                "cloudflare-worker",
+                "accounts/0123456789abcdef0123456789abcdef/workers/services/apm-task-turn",
+                "https://apm-task-turn.example.workers.dev",
+                "http-header-secret",
+            ),
+            (
+                "vercel-edge",
+                "projects/apm-task-turn/functions/api/apm/[...path]",
+                "https://apm-task-turn.vercel.app",
+                "http-header-secret",
+            ),
+            (
+                "supabase-edge",
+                "projects/abcdefghijklmnopqrst/functions/apm-task-turn",
+                "https://abcdefghijklmnopqrst.functions.supabase.co",
+                "http-header-secret",
+            ),
+        )
+        manifest = {
+            "runtime_ref": "apm://runtime/human-input-runner@0.1.0",
+            "runtime_boundary": {"host_services_only": ["human_input_channel"]},
+        }
+
+        for provider, resource, invoke_url, auth_type in cases:
+            with self.subTest(provider=provider):
+                document = {
+                    "version": "apm.runtime.binding.v1",
+                    "bindings": {
+                        manifest["runtime_ref"]: {
+                            "provider": provider,
+                            "resource": resource,
+                            "invoke_url": invoke_url,
+                            "auth": {
+                                "type": auth_type,
+                                "credential_ref": "env:APM_TASK_TURN_RUNTIME_SECRET",
+                                "parameters": {
+                                    "application_secret_header": "x-apm-runtime-secret",
+                                    **(
+                                        {"invoke_path_prefix": "/api/apm"}
+                                        if provider == "vercel-edge"
+                                        else {"invoke_path_prefix": "/apm-task-turn"}
+                                        if provider == "supabase-edge"
+                                        else {}
+                                    ),
+                                },
+                            },
+                            "capabilities": ["human_input_channel"],
+                        }
+                    },
+                }
+                self.assertEqual(validate_runtime_binding_document(document), [])
+                self.assertEqual(
+                    resolve_runtime_binding(
+                        manifest,
+                        document,
+                        required_capabilities=["human_input_channel"],
+                    )["provider"],
+                    provider,
+                )
+
+                document["bindings"][manifest["runtime_ref"]]["auth"]["parameters"] = {}
+                self.assertTrue(
+                    any(
+                        "application_secret_header" in problem
+                        for problem in validate_runtime_binding_document(document)
+                    )
+                )
+
+    def test_runtime_binding_examples_are_individually_valid(self) -> None:
+        bindings = ROOT / "examples" / "runtime-bindings"
+
+        for path in sorted(bindings.glob("*.json")):
+            with self.subTest(path=path.name):
+                document = json.loads(path.read_text(encoding="utf-8"))
+                self.assertEqual(validate_runtime_binding_document(document), [])
+
     def test_plugin_path_cannot_escape_package_root(self) -> None:
         pack, manifest = self._interoperability_fixture()
         manifest["runtime_contract"]["interoperability"]["agent_plugins"]["plugin_manifest"] = "../plugin.json"

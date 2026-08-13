@@ -1,0 +1,21 @@
+{
+  "version": "apm.runtime.binding.v1",
+  "bindings": {
+    "apm://runtime/task-turn-probe@0.1.0": {
+      "provider": "vercel-edge",
+      "resource": "projects/apm-task-turn/functions/api/apm/[...path]",
+      "invoke_url": "https://apm-task-turn.vercel.app",
+      "auth": {
+        "type": "http-header-secret",
+        "credential_ref": "env:APM_TASK_TURN_PROBE_SECRET",
+        "parameters": {
+          "application_secret_header": "x-apm-task-turn-probe-secret",
+          "invoke_path_prefix": "/api/apm"
+        }
+      },
+      "capabilities": [
+        "human_input_channel"
+      ]
+    }
+  }
+}

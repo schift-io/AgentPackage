@@ -8,6 +8,10 @@ from urllib.parse import urlparse
 RUNTIME_BINDING_VERSION = "apm.runtime.binding.v1"
 RUNTIME_RESOLUTION_VERSION = "apm.runtime.resolution.v1"
 GCP_CLOUD_RUN_PROVIDER = "gcp-cloud-run"
+AWS_LAMBDA_PROVIDER = "aws-lambda"
+CLOUDFLARE_WORKER_PROVIDER = "cloudflare-worker"
+VERCEL_EDGE_PROVIDER = "vercel-edge"
+SUPABASE_EDGE_PROVIDER = "supabase-edge"
 
 _RUNTIME_REF_PATTERN = re.compile(
     r"^apm://runtime/[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?@"
@@ -20,6 +24,23 @@ _CLOUD_RUN_RESOURCE_PATTERN = re.compile(
 )
 _SERVICE_ACCOUNT_PATTERN = re.compile(
     r"^[^@\s]+@[^@\s]+\.iam\.gserviceaccount\.com$"
+)
+_AWS_LAMBDA_ARN_PATTERN = re.compile(
+    r"^arn:aws(?:-[a-z]+)?:lambda:[a-z0-9-]+:[0-9]{12}:function:"
+    r"[A-Za-z0-9_-]+(?::[A-Za-z0-9_-]+)?$"
+)
+_CLOUDFLARE_WORKER_RESOURCE_PATTERN = re.compile(
+    r"^accounts/[0-9a-f]{32}/workers/services/[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
+)
+_VERCEL_EDGE_RESOURCE_PATTERN = re.compile(
+    r"^projects/[A-Za-z0-9_-]+/functions/[A-Za-z0-9._/\[\]-]+$"
+)
+_SUPABASE_EDGE_RESOURCE_PATTERN = re.compile(
+    r"^projects/[a-z0-9]{20}/functions/[a-z][a-z0-9-]{0,62}$"
+)
+_APPLICATION_SECRET_HEADER_PATTERN = re.compile(r"^[A-Za-z0-9-]{1,128}$")
+_INVOKE_PATH_PREFIX_PATTERN = re.compile(
+    r"^/(?:[A-Za-z0-9][A-Za-z0-9._~-]*)(?:/[A-Za-z0-9][A-Za-z0-9._~-]*)*$"
 )
 
 
@@ -139,6 +160,34 @@ def _validate_binding(value: Any, label: str, problems: list[str]) -> None:
 
     if provider == GCP_CLOUD_RUN_PROVIDER:
         _validate_cloud_run_binding(value, label, problems)
+    elif provider == AWS_LAMBDA_PROVIDER:
+        _validate_lambda_binding(value, label, problems)
+    elif provider == CLOUDFLARE_WORKER_PROVIDER:
+        _validate_http_secret_binding(
+            value,
+            label,
+            problems,
+            resource_pattern=_CLOUDFLARE_WORKER_RESOURCE_PATTERN,
+            provider=CLOUDFLARE_WORKER_PROVIDER,
+        )
+    elif provider == VERCEL_EDGE_PROVIDER:
+        _validate_http_secret_binding(
+            value,
+            label,
+            problems,
+            resource_pattern=_VERCEL_EDGE_RESOURCE_PATTERN,
+            provider=VERCEL_EDGE_PROVIDER,
+            require_path_prefix=True,
+        )
+    elif provider == SUPABASE_EDGE_PROVIDER:
+        _validate_http_secret_binding(
+            value,
+            label,
+            problems,
+            resource_pattern=_SUPABASE_EDGE_RESOURCE_PATTERN,
+            provider=SUPABASE_EDGE_PROVIDER,
+            require_path_prefix=True,
+        )
 
 
 def _validate_cloud_run_binding(
@@ -171,6 +220,77 @@ def _validate_cloud_run_binding(
     ):
         problems.append(
             f"{label}.auth.invoker_service_account must be a Google service account"
+        )
+
+
+def _validate_lambda_binding(
+    binding: Mapping[str, Any], label: str, problems: list[str]
+) -> None:
+    resource = binding.get("resource")
+    if not isinstance(resource, str) or not _AWS_LAMBDA_ARN_PATTERN.fullmatch(resource):
+        problems.append(
+            f"{label}.resource must be an AWS Lambda function ARN for aws-lambda"
+        )
+    auth = binding.get("auth")
+    if not isinstance(auth, dict):
+        return
+    if auth.get("type") != "aws-lambda-invoke":
+        problems.append(f"{label}.auth.type must be 'aws-lambda-invoke' for aws-lambda")
+        return
+    _validate_application_secret_header(auth, label, problems)
+
+
+def _validate_http_secret_binding(
+    binding: Mapping[str, Any],
+    label: str,
+    problems: list[str],
+    *,
+    resource_pattern: re.Pattern[str],
+    provider: str,
+    require_path_prefix: bool = False,
+) -> None:
+    resource = binding.get("resource")
+    if not isinstance(resource, str) or not resource_pattern.fullmatch(resource):
+        problems.append(
+            f"{label}.resource has an invalid provider identity for {provider}"
+        )
+    auth = binding.get("auth")
+    if not isinstance(auth, dict):
+        return
+    if auth.get("type") != "http-header-secret":
+        problems.append(f"{label}.auth.type must be 'http-header-secret' for {provider}")
+        return
+    _validate_application_secret_header(auth, label, problems)
+    if require_path_prefix:
+        _validate_invoke_path_prefix(auth, label, problems)
+
+
+def _validate_application_secret_header(
+    auth: Mapping[str, Any], label: str, problems: list[str]
+) -> None:
+    parameters = auth.get("parameters")
+    if not isinstance(parameters, Mapping):
+        problems.append(
+            f"{label}.auth.parameters.application_secret_header is required"
+        )
+        return
+    header = parameters.get("application_secret_header")
+    if not isinstance(header, str) or _APPLICATION_SECRET_HEADER_PATTERN.fullmatch(header) is None:
+        problems.append(
+            f"{label}.auth.parameters.application_secret_header must be a safe HTTP header name"
+        )
+
+
+def _validate_invoke_path_prefix(
+    auth: Mapping[str, Any], label: str, problems: list[str]
+) -> None:
+    parameters = auth.get("parameters")
+    if not isinstance(parameters, Mapping):
+        return
+    prefix = parameters.get("invoke_path_prefix")
+    if not isinstance(prefix, str) or _INVOKE_PATH_PREFIX_PATTERN.fullmatch(prefix) is None:
+        problems.append(
+            f"{label}.auth.parameters.invoke_path_prefix must be a safe absolute path prefix"
         )
 
 
