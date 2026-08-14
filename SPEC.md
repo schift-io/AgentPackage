@@ -60,6 +60,10 @@ docs/runtime-services-v1.md, docs/interoperability.md에
 | 디렉터리 엔트리 | **싣지 않는다** (파일만) |
 | `__pycache__` | 번들에서 제외 |
 
+수신·추출기는 fail-closed로 동작한다. 절대경로 또는 `.`/`..` 경로, 비파일 엔트리
+(디렉터리·링크·device 등), 중복 파일명(특히 `manifest.json`), 누락된 매니페스트는
+거절한다. `manifest.json`은 컨테이너가 예약한 이름이므로 source 파일로 넣을 수 없다.
+
 **Canonical JSON** — 매니페스트 직렬화는 `json.dumps(obj, ensure_ascii=False,
 sort_keys=True, separators=(",", ":"))` 의 UTF-8 인코딩이다. 공백·키 순서가 달라지면
 해시가 달라진다.

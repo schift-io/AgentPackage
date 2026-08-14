@@ -15,6 +15,7 @@ import gzip
 import hashlib
 import io
 import json
+from pathlib import PurePosixPath
 import tarfile
 from typing import Any
 
@@ -24,6 +25,10 @@ MANIFEST_NAME = "manifest.json"
 
 class ApmHashMismatch(ValueError):
     """받은 .apm의 content-hash가 기대값(DB 등록 hash)과 다르다 — 변조/drift."""
+
+
+class ApmArchiveError(ValueError):
+    pass
 
 
 def _canonical_json(obj: Any) -> bytes:
@@ -94,11 +99,25 @@ def content_hash(manifest: dict[str, Any], files: dict[str, bytes]) -> str:
     return h.hexdigest()
 
 
+def _validate_archive_path(path: str) -> None:
+    if not path or "\\" in path:
+        raise ApmArchiveError(f"invalid archive path: {path!r}")
+    pure_path = PurePosixPath(path)
+    if pure_path.is_absolute() or any(part in {".", ".."} for part in path.split("/")):
+        raise ApmArchiveError(f"unsafe archive path: {path!r}")
+
+
 def build_apm_bundle(
     manifest: dict[str, Any], files: dict[str, bytes] | None = None
 ) -> tuple[bytes, str]:
     """(.apm tar.gz 바이트, content_hash) 반환. 결정적."""
     files = dict(files or {})
+    for path in files:
+        _validate_archive_path(path)
+        if path == MANIFEST_NAME:
+            raise ApmArchiveError(
+                f"source file collides with reserved manifest: {MANIFEST_NAME}"
+            )
     chash = content_hash(manifest, files)
 
     raw = io.BytesIO()
@@ -123,20 +142,34 @@ def build_apm_bundle(
 def read_apm_bundle(data: bytes) -> tuple[dict[str, Any], dict[str, bytes]]:
     """.apm 바이트 → (manifest, files). manifest는 MANIFEST_NAME에서 파싱."""
     files: dict[str, bytes] = {}
-    manifest: dict[str, Any] = {}
-    with gzip.GzipFile(fileobj=io.BytesIO(data), mode="rb") as gz:
-        with tarfile.open(fileobj=io.BytesIO(gz.read()), mode="r") as tar:
-            for member in tar.getmembers():
+    manifest: dict[str, Any] | None = None
+    seen: set[str] = set()
+    try:
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tar:
+            for member in tar:
+                _validate_archive_path(member.name)
                 if not member.isfile():
-                    continue
+                    raise ApmArchiveError(
+                        f"non-file archive member is not allowed: {member.name!r}"
+                    )
+                if member.name in seen:
+                    raise ApmArchiveError(f"duplicate archive member: {member.name!r}")
+                seen.add(member.name)
                 f = tar.extractfile(member)
                 if f is None:
-                    continue
+                    raise ApmArchiveError(f"cannot read archive member: {member.name!r}")
                 content = f.read()
                 if member.name == MANIFEST_NAME:
-                    manifest = json.loads(content.decode("utf-8"))
+                    decoded = json.loads(content.decode("utf-8"))
+                    if not isinstance(decoded, dict):
+                        raise ApmArchiveError("manifest.json must contain a JSON object")
+                    manifest = decoded
                 else:
                     files[member.name] = content
+    except (OSError, tarfile.TarError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ApmArchiveError(f"invalid .apm archive: {exc}") from exc
+    if manifest is None:
+        raise ApmArchiveError("manifest.json is missing")
     return manifest, files
 
 

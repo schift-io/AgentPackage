@@ -7,13 +7,16 @@
 명령:
   check  <pack> [--host HOST]                  호스트 능력 대조 (fail-closed)
   lint   <pack> [--identity-patterns PATH]     어휘·필수 필드·테넌트 정체성 스캔
+  extract <artifact> --output <dir>            안전한 새 편집 소스로 추출
+  fork    <artifact> --output <dir> --agent-id <id> --version <semver>
+                                                  새 identity/version으로 fork
   vendor --dest <dir> [--check]                 정본 코덱 내보내기 / 갈림 검사
   market                                       .claude-plugin/marketplace.json 생성
 
-4개 서브커맨드 전부 `--packs-dir PATH`(기본: `<repo>/packs`)를 받는다 — 이 repo 밖으로
-kit만 떼어낼 때 packs 위치를 지정하기 위함. 디렉터리가 없으면 에러로 죽는다(빈손 성공
-금지). `lint`의 테넌트 정체성 패턴은 `kit/identity-patterns.json`(기본값)에서 읽는다 —
-파일이 없으면 스캔을 건너뛰고 그 사실을 명시적으로 출력한다(조용한 게이트 무력화 금지).
+`check`/`lint`/`build`/`market`은 `--packs-dir PATH`(기본: `<repo>/packs`)를 받는다.
+디렉터리가 없으면 에러로 죽는다(빈손 성공 금지). `lint`의 테넌트 정체성 패턴은
+`kit/identity-patterns.json`(기본값)에서 읽는다. 파일이 없으면 스캔을 건너뛰고 그
+사실을 명시적으로 출력한다(조용한 게이트 무력화 금지).
 
 발행 정책은 **fail-closed**: `apm.yml`에 `marketplace.publish: true`를 명시하지 않은
 팩은 마켓플레이스에 실리지 않는다. 선언이 없는 것이 기본이고, 그게 안전한 기본값이다.
@@ -340,6 +343,112 @@ def cmd_build(args: argparse.Namespace) -> int:
     return rc
 
 
+SEMVER_RE = re.compile(
+    r"^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
+    r"(?:-(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?"
+    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
+)
+
+
+def _read_artifact(path: Path) -> tuple[dict[str, Any], dict[str, bytes], str]:
+    from apm_codec import content_hash, read_apm_bundle
+
+    if not path.is_file():
+        raise ValueError(f"artifact not found: {path}")
+    manifest, files = read_apm_bundle(path.read_bytes())
+    return manifest, files, content_hash(manifest, files)
+
+
+def _prepare_output_dir(path: Path) -> None:
+    if path.exists():
+        if not path.is_dir():
+            raise ValueError(f"output is not a directory: {path}")
+        if any(path.iterdir()):
+            raise ValueError(f"output directory must be absent or empty: {path}")
+    else:
+        path.mkdir(parents=True)
+
+
+def _write_extracted_files(output: Path, files: dict[str, bytes]) -> None:
+    output_root = output.resolve()
+    for name, content in files.items():
+        target = output / name
+        if output_root not in target.resolve().parents:
+            raise ValueError(f"unsafe extracted path: {name!r}")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+
+
+def cmd_extract(args: argparse.Namespace) -> int:
+    try:
+        _manifest, files, content_hash = _read_artifact(Path(args.artifact))
+        output = Path(args.output)
+        _prepare_output_dir(output)
+        _write_extracted_files(output, files)
+    except (OSError, ValueError) as exc:
+        print(f"✗  extract: {exc}", file=sys.stderr)
+        return 1
+    print(
+        f"✓  extracted {len(files)} files → {_display_path(output)} "
+        f"(content hash {content_hash})"
+    )
+    return 0
+
+
+def _fork_manifest(manifest: dict[str, Any], agent_id: str, version: str) -> dict[str, Any]:
+    forked = dict(manifest)
+    forked["agent_id"] = agent_id
+    forked["version"] = version
+    forked["package_ref"] = f"{agent_id}@{version}"
+    overrides = forked.get("manifest_overrides")
+    if isinstance(overrides, dict):
+        forked["manifest_overrides"] = {**overrides, "name": agent_id, "version": version}
+    return forked
+
+
+def _write_authoring_identity(path: Path, agent_id: str, version: str) -> None:
+    authoring = _load_yaml(path)
+    if not isinstance(authoring, dict):
+        raise ValueError(f"authoring manifest is not a mapping: {path}")
+    authoring["name"] = agent_id
+    authoring["version"] = version
+    if "agent_id" in authoring:
+        authoring["agent_id"] = agent_id
+    try:
+        import yaml
+    except ImportError:
+        raise ValueError("apm-kit requires PyYAML to update apm.yml")
+    path.write_text(
+        yaml.safe_dump(authoring, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
+
+
+def cmd_fork(args: argparse.Namespace) -> int:
+    if not SEMVER_RE.fullmatch(args.version):
+        print(f"✗  fork: version must be SemVer: {args.version!r}", file=sys.stderr)
+        return 1
+    try:
+        manifest, files, original_hash = _read_artifact(Path(args.artifact))
+        output = Path(args.output)
+        _prepare_output_dir(output)
+        _write_extracted_files(output, files)
+        forked_manifest = _fork_manifest(manifest, args.agent_id, args.version)
+        (output / "pack.json").write_text(
+            json.dumps(forked_manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        authoring = output / "apm.yml"
+        if authoring.is_file():
+            _write_authoring_identity(authoring, args.agent_id, args.version)
+    except (OSError, ValueError) as exc:
+        print(f"✗  fork: {exc}", file=sys.stderr)
+        return 1
+    print(f"✓  forked {len(files)} files → {_display_path(output)}")
+    print(f"   original content hash: {original_hash}")
+    print("   rebuild and re-sign this fork before distribution.")
+    return 0
+
+
 VENDOR_HEADER = """\
 # ⚠️ 생성된 파일 — 직접 고치지 마라. 고치면 `apm-kit vendor --check` 가 빨개진다.
 #
@@ -478,6 +587,18 @@ def main() -> int:
     p_build.add_argument("--out", help="output dir (default: dist/)")
     p_build.add_argument("--packs-dir", default=str(DEFAULT_PACKS_DIR))
     p_build.set_defaults(func=cmd_build)
+
+    p_extract = sub.add_parser("extract", help="safe .apm -> editable .agent directory")
+    p_extract.add_argument("artifact", help="sealed .apm artifact")
+    p_extract.add_argument("--output", required=True, help="new or empty editable .agent directory")
+    p_extract.set_defaults(func=cmd_extract)
+
+    p_fork = sub.add_parser("fork", help="extract and assign a new agent identity/version")
+    p_fork.add_argument("artifact", help="sealed .apm artifact")
+    p_fork.add_argument("--output", required=True, help="new or empty editable .agent directory")
+    p_fork.add_argument("--agent-id", required=True, help="new agent identifier")
+    p_fork.add_argument("--version", required=True, help="new SemVer version")
+    p_fork.set_defaults(func=cmd_fork)
 
     p_vendor = sub.add_parser(
         "vendor", help="정본 코덱을 소비자 repo 로 내보내기 / 갈렸는지 검사(--check)"

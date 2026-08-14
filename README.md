@@ -53,6 +53,13 @@ python3 kit/apm_kit.py check examples/portable.agent --host local-byo --packs-di
 
 # Runtime에 넘길 sealed artifact를 만든다
 python3 kit/apm_kit.py build examples/portable.agent --packs-dir examples --out dist
+
+# 받은 artifact를 새 편집 소스로만 안전하게 푼다 (기존 파일 덮어쓰기 금지)
+python3 kit/apm_kit.py extract dist/portable-hello-0.1.0.apm --output work/portable.agent
+
+# identity/version을 바꾼 fork는 새 artifact를 다시 build하고 서명해야 한다
+python3 kit/apm_kit.py fork dist/portable-hello-0.1.0.apm --output work/portable-fork.agent \
+  --agent-id portable-fork --version 0.2.0
 ```
 
 실제 예시는 [`gongnangi-chart.agent`](examples/gongnangi-chart.agent)다.
@@ -63,6 +70,12 @@ python3 kit/apm_kit.py build examples/portable.agent --packs-dir examples --out 
 `.agent`는 Git에서 관리하는 원본이고 `.apm`은 그 원본에서 빌드한 배포물이다.
 Runtime은 `.agent`의 내부 구현을 직접 알지 않고 `.apm`의 선언과 capability를
 자기 서비스에 연결한다.
+
+`extract`와 `fork`는 archive traversal·링크/디렉터리 같은 비파일 엔트리·중복 이름·
+매니페스트 충돌을 거절하고, 출력 디렉터리가 없거나 비어 있을 때만 쓴다. `fork`는
+원래 content hash를 출력한 뒤 `pack.json`과 존재하는 `apm.yml`의 identity/version을
+바꾼다. 새 `.agent`는 원 artifact의 서명이나 신뢰를 물려받지 않으므로 반드시 다시
+`build`하고, 서명을 쓰는 배포 경로에서는 재서명해야 한다.
 
 패키지가 특정 실행기 protocol을 선호하면 `runtime_ref`에
 `apm://runtime/<name>@<semver>`만 기록한다. Cloud Run resource name, Lambda ARN,
