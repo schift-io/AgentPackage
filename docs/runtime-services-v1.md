@@ -267,6 +267,68 @@ compatibility mode, not credential isolation; production adapters SHOULD use a
 short-lived brokered provider credential instead. No runtime may describe a
 plain Docker bridge or host network as this contract's `provider-proxy` mode.
 
+## Governance declaration profile (`apm.governance.v0.1`)
+
+`runtime_contract.governance` is an optional, additive declaration for a package
+that must run under an enterprise governance boundary. Its presence does not
+change the meaning of an existing `runtime_contract`; packages that omit it
+remain valid. It describes requirements only. The Runtime, never the package,
+enforces policy, brokers credentials, exports audit records, and verifies image
+provenance.
+
+```yaml
+runtime_contract:
+  version: apm.runtime.services.v1
+  governance:
+    version: apm.governance.v0.1
+    sandbox:
+      isolation: microvm
+      network:
+        default: deny
+        allow:
+          - {kind: domain, value: models.example.invalid}
+      mounts:
+        - {id: package, access: read-only}
+        - {id: artifacts, access: read-write}
+    credentials:
+      exposure: brokered-only
+      allow: [model-provider]
+    mcp:
+      default: deny
+      servers:
+        - {id: research, tools: [search, cite]}
+    audit:
+      events: [policy.decision, mcp.tool_call, credential.lease, runtime.image_verified]
+      siem_export: required
+    runtime_images:
+      - ref: registry.example.invalid/apm/runtime
+        digest: sha256:<64 lowercase hex characters>
+        signature: required
+        sbom: required
+```
+
+- **Sandbox/network.** `microvm` and a deny-by-default network are required.
+  Network allowlist entries may identify a `domain`, `ip`, or `cidr`; mount IDs
+  are logical names only, never host paths. The adapter maps them to its own
+  permitted storage mounts.
+- **Credentials.** `brokered-only` means a package receives no raw provider,
+  cloud, user-profile, or MCP credential. `allow` names logical broker grants;
+  values are not secrets and do not select a provider endpoint.
+- **MCP.** Server and tool lists are a package allowlist. Everything not named
+  is denied; adapters must not silently substitute an unlisted server or tool.
+- **Audit.** `events` must include exactly `policy.decision`, `mcp.tool_call`,
+  `credential.lease`, and `runtime.image_verified`; SIEM export is required.
+  Events must not include secrets, authorization headers, bearer tokens, or
+  secret-bearing URLs.
+- **Runtime image.** Each accepted image is digest-pinned and requires a
+  verified signature and SBOM. The runtime owns trust roots and verification
+  evidence; a declaration is not evidence by itself.
+
+This declaration derives `governance_policy_enforcer`, `credential_broker`,
+`audit_siem_export`, and `trusted_runtime_image`. A host that does not provide
+all four must reject the package before execution. No current AgentPackage host
+profile claims these capabilities merely because it can parse the declaration.
+
 ## Derived capabilities
 
 | Contract declaration | Required capability |
@@ -282,6 +344,7 @@ plain Docker bridge or host network as this contract's `provider-proxy` mode.
 | non-empty `mcp.bindings` | `scoped_mcp_binding` |
 | `sandbox.mode: isolated` | `isolated_sandbox` |
 | `sandbox.model_egress: provider-proxy` | `provider_egress_proxy` |
+| `governance` | `governance_policy_enforcer`, `credential_broker`, `audit_siem_export`, `trusted_runtime_image` |
 | Agent Plugins declaration | `agent_plugins_runtime` |
 | A2A `role: client` | `a2a_task_client` |
 | A2A `role: server` | `a2a_task_server` |

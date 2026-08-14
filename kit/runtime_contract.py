@@ -15,6 +15,10 @@ AGENT_PLUGINS_MCP_SCHEMA = (
     "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
 )
 A2A_VERSION = "1.0"
+GOVERNANCE_CONTRACT_VERSION = "apm.governance.v0.1"
+GOVERNANCE_AUDIT_EVENTS = frozenset(
+    {"policy.decision", "mcp.tool_call", "credential.lease", "runtime.image_verified"}
+)
 _RUNTIME_REF_PATTERN = re.compile(
     r"^apm://runtime/[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?@"
     r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)"
@@ -80,6 +84,16 @@ def runtime_required_capabilities(manifest: dict[str, Any]) -> set[str]:
         if sandbox.get("model_egress") == "provider-proxy":
             required.add("provider_egress_proxy")
 
+    if isinstance(contract.get("governance"), dict):
+        required.update(
+            {
+                "governance_policy_enforcer",
+                "credential_broker",
+                "audit_siem_export",
+                "trusted_runtime_image",
+            }
+        )
+
     interoperability = contract.get("interoperability")
     if isinstance(interoperability, dict):
         if interoperability.get("agent_plugins") is not None:
@@ -118,6 +132,7 @@ def validate_runtime_contract(
         "data",
         "mcp",
         "sandbox",
+        "governance",
         "interoperability",
     }
     unknown = sorted(set(contract) - allowed)
@@ -134,6 +149,7 @@ def validate_runtime_contract(
     _validate_data(contract.get("data"), problems)
     _validate_mcp(contract.get("mcp"), problems)
     _validate_sandbox(contract.get("sandbox"), problems)
+    _validate_governance(contract.get("governance"), problems)
     _validate_interoperability(
         contract.get("interoperability"), pack_root, package_files, problems
     )
@@ -265,6 +281,164 @@ def _validate_sandbox(value: Any, problems: list[str]) -> None:
         problems.append("runtime_contract.sandbox.package_network must be 'none'")
     if value.get("model_egress") not in {"none", "provider-proxy"}:
         problems.append("runtime_contract.sandbox.model_egress must be 'none' or 'provider-proxy'")
+
+
+def _validate_governance(value: Any, problems: list[str]) -> None:
+    if value is None:
+        return
+    if not isinstance(value, dict):
+        problems.append("runtime_contract.governance must be an object")
+        return
+    _unknown_fields(
+        value,
+        {"version", "sandbox", "credentials", "mcp", "audit", "runtime_images"},
+        "runtime_contract.governance",
+        problems,
+    )
+    if value.get("version") != GOVERNANCE_CONTRACT_VERSION:
+        problems.append(
+            f"runtime_contract.governance.version must be {GOVERNANCE_CONTRACT_VERSION!r}"
+        )
+    _validate_governance_sandbox(value.get("sandbox"), problems)
+    _validate_governance_credentials(value.get("credentials"), problems)
+    _validate_governance_mcp(value.get("mcp"), problems)
+    _validate_governance_audit(value.get("audit"), problems)
+    _validate_governance_runtime_images(value.get("runtime_images"), problems)
+
+
+def _validate_governance_sandbox(value: Any, problems: list[str]) -> None:
+    label = "runtime_contract.governance.sandbox"
+    if not isinstance(value, dict):
+        problems.append(f"{label} must be an object")
+        return
+    _unknown_fields(value, {"isolation", "network", "mounts"}, label, problems)
+    if value.get("isolation") != "microvm":
+        problems.append(f"{label}.isolation must be 'microvm'")
+    network = value.get("network")
+    if not isinstance(network, dict):
+        problems.append(f"{label}.network must be an object")
+    else:
+        _unknown_fields(network, {"default", "allow"}, f"{label}.network", problems)
+        if network.get("default") != "deny":
+            problems.append(f"{label}.network.default must be 'deny'")
+        _validate_network_allowlist(network.get("allow"), f"{label}.network.allow", problems)
+    mounts = value.get("mounts")
+    if not isinstance(mounts, list):
+        problems.append(f"{label}.mounts must be a list")
+        return
+    seen: set[str] = set()
+    for index, mount in enumerate(mounts):
+        mount_label = f"{label}.mounts[{index}]"
+        if not isinstance(mount, dict):
+            problems.append(f"{mount_label} must be an object")
+            continue
+        _unknown_fields(mount, {"id", "access"}, mount_label, problems)
+        identifier = mount.get("id")
+        if not isinstance(identifier, str) or not identifier.strip():
+            problems.append(f"{mount_label}.id must be a non-empty logical mount id")
+        elif identifier in seen:
+            problems.append(f"{mount_label}.id duplicates {identifier!r}")
+        else:
+            seen.add(identifier)
+        if mount.get("access") not in {"read-only", "read-write"}:
+            problems.append(f"{mount_label}.access must be 'read-only' or 'read-write'")
+
+
+def _validate_network_allowlist(value: Any, label: str, problems: list[str]) -> None:
+    if not isinstance(value, list):
+        problems.append(f"{label} must be a list")
+        return
+    for index, entry in enumerate(value):
+        entry_label = f"{label}[{index}]"
+        if not isinstance(entry, dict):
+            problems.append(f"{entry_label} must be an object")
+            continue
+        _unknown_fields(entry, {"kind", "value"}, entry_label, problems)
+        if entry.get("kind") not in {"domain", "ip", "cidr"}:
+            problems.append(f"{entry_label}.kind must be 'domain', 'ip', or 'cidr'")
+        if not isinstance(entry.get("value"), str) or not entry["value"].strip():
+            problems.append(f"{entry_label}.value must be a non-empty string")
+
+
+def _validate_governance_credentials(value: Any, problems: list[str]) -> None:
+    label = "runtime_contract.governance.credentials"
+    if not isinstance(value, dict):
+        problems.append(f"{label} must be an object")
+        return
+    _unknown_fields(value, {"exposure", "allow"}, label, problems)
+    if value.get("exposure") != "brokered-only":
+        problems.append(f"{label}.exposure must be 'brokered-only'")
+    _nonempty_string_list(value.get("allow"), f"{label}.allow", problems)
+
+
+def _validate_governance_mcp(value: Any, problems: list[str]) -> None:
+    label = "runtime_contract.governance.mcp"
+    if not isinstance(value, dict):
+        problems.append(f"{label} must be an object")
+        return
+    _unknown_fields(value, {"default", "servers"}, label, problems)
+    if value.get("default") != "deny":
+        problems.append(f"{label}.default must be 'deny'")
+    servers = value.get("servers")
+    if not isinstance(servers, list):
+        problems.append(f"{label}.servers must be a list")
+        return
+    seen: set[str] = set()
+    for index, server in enumerate(servers):
+        server_label = f"{label}.servers[{index}]"
+        if not isinstance(server, dict):
+            problems.append(f"{server_label} must be an object")
+            continue
+        _unknown_fields(server, {"id", "tools"}, server_label, problems)
+        identifier = server.get("id")
+        if not isinstance(identifier, str) or not identifier.strip():
+            problems.append(f"{server_label}.id must be a non-empty string")
+        elif identifier in seen:
+            problems.append(f"{server_label}.id duplicates {identifier!r}")
+        else:
+            seen.add(identifier)
+        _nonempty_string_list(server.get("tools"), f"{server_label}.tools", problems)
+
+
+def _validate_governance_audit(value: Any, problems: list[str]) -> None:
+    label = "runtime_contract.governance.audit"
+    if not isinstance(value, dict):
+        problems.append(f"{label} must be an object")
+        return
+    _unknown_fields(value, {"events", "siem_export"}, label, problems)
+    _nonempty_string_list(value.get("events"), f"{label}.events", problems)
+    events = value.get("events")
+    if isinstance(events, list) and all(isinstance(event, str) and event for event in events):
+        unknown = sorted(set(events) - GOVERNANCE_AUDIT_EVENTS)
+        missing = sorted(GOVERNANCE_AUDIT_EVENTS - set(events))
+        if unknown:
+            problems.append(f"{label}.events has unknown event classes {unknown}")
+        if missing:
+            problems.append(f"{label}.events is missing required event classes {missing}")
+    if value.get("siem_export") != "required":
+        problems.append(f"{label}.siem_export must be 'required'")
+
+
+def _validate_governance_runtime_images(value: Any, problems: list[str]) -> None:
+    label = "runtime_contract.governance.runtime_images"
+    if not isinstance(value, list) or not value:
+        problems.append(f"{label} must be a non-empty list")
+        return
+    for index, image in enumerate(value):
+        image_label = f"{label}[{index}]"
+        if not isinstance(image, dict):
+            problems.append(f"{image_label} must be an object")
+            continue
+        _unknown_fields(image, {"ref", "digest", "signature", "sbom"}, image_label, problems)
+        if not isinstance(image.get("ref"), str) or not image["ref"].strip():
+            problems.append(f"{image_label}.ref must be a non-empty image reference")
+        digest = image.get("digest")
+        if not isinstance(digest, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+            problems.append(f"{image_label}.digest must be a sha256 digest")
+        if image.get("signature") != "required":
+            problems.append(f"{image_label}.signature must be 'required'")
+        if image.get("sbom") != "required":
+            problems.append(f"{image_label}.sbom must be 'required'")
 
 
 def _validate_interoperability(

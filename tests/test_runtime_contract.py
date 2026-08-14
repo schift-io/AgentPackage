@@ -66,6 +66,64 @@ class RuntimeContractTests(unittest.TestCase):
 
         self.assertTrue(any("model_inference_adapter" in problem for problem in problems))
 
+    def test_governance_fixture_is_valid_but_requires_an_enforcing_host(self) -> None:
+        pack = ROOT / "examples" / "governance.agent"
+        manifest = json.loads((pack / "pack.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(validate_runtime_contract(manifest, pack_root=pack), [])
+        self.assertEqual(
+            runtime_required_capabilities(manifest),
+            {
+                "governance_policy_enforcer",
+                "credential_broker",
+                "audit_siem_export",
+                "trusted_runtime_image",
+            },
+        )
+        self.assertNotEqual(
+            apm_kit.cmd_check(
+                argparse.Namespace(
+                    host="docker-codex-isolated",
+                    pack="governance.agent",
+                    packs_dir=str(ROOT / "examples"),
+                )
+            ),
+            0,
+        )
+
+    def test_governance_rejects_a_permissive_network_and_unpinned_image(self) -> None:
+        manifest = {
+            "runtime_boundary": {
+                "host_services_only": [
+                    "governance_policy_enforcer",
+                    "credential_broker",
+                    "audit_siem_export",
+                    "trusted_runtime_image",
+                ]
+            },
+            "runtime_contract": {
+                "version": "apm.runtime.services.v1",
+                "governance": {
+                    "version": "apm.governance.v0.1",
+                    "sandbox": {
+                        "isolation": "microvm",
+                        "network": {"default": "allow", "allow": []},
+                        "mounts": [],
+                    },
+                    "credentials": {"exposure": "brokered-only", "allow": ["model-provider"]},
+                    "mcp": {"default": "deny", "servers": []},
+                    "audit": {"events": ["policy.decision"], "siem_export": "required"},
+                    "runtime_images": [{"ref": "registry.example.invalid/apm/runtime:latest", "digest": "latest", "signature": "required", "sbom": "required"}],
+                },
+            },
+        }
+
+        problems = validate_runtime_contract(manifest)
+
+        self.assertTrue(any("network.default" in problem for problem in problems))
+        self.assertTrue(any("runtime_images[0].digest" in problem for problem in problems))
+        self.assertTrue(any("missing required event classes" in problem for problem in problems))
+
     def test_data_contract_cannot_hide_the_scoped_connector_boundary(self) -> None:
         manifest = {
             "runtime_boundary": {"host_services_only": ["web_search_connector"]},

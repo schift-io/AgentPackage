@@ -1,0 +1,42 @@
+name: governance-demo
+display_name: "Governance Declaration Demo"
+version: 0.1.0
+description: "A declaration-only fixture for APM governance v0.1."
+runtime_boundary:
+  host_services_only:
+    - governance_policy_enforcer
+    - credential_broker
+    - audit_siem_export
+    - trusted_runtime_image
+runtime_contract:
+  version: apm.runtime.services.v1
+  governance:
+    version: apm.governance.v0.1
+    sandbox:
+      isolation: microvm
+      network:
+        default: deny
+        allow:
+          - kind: domain
+            value: models.example.invalid
+      mounts:
+        - id: package
+          access: read-only
+        - id: artifacts
+          access: read-write
+    credentials:
+      exposure: brokered-only
+      allow: [model-provider]
+    mcp:
+      default: deny
+      servers:
+        - id: research
+          tools: [search, cite]
+    audit:
+      events: [policy.decision, mcp.tool_call, credential.lease, runtime.image_verified]
+      siem_export: required
+    runtime_images:
+      - ref: registry.example.invalid/apm/runtime
+        digest: sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        signature: required
+        sbom: required

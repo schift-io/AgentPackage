@@ -198,6 +198,26 @@
       "transport": "in_process",
       "metered_by": "none"
     },
+    "governance_policy_enforcer": {
+      "desc": "선언된 sandbox, network, MCP 정책을 fail-closed로 평가·강제",
+      "transport": "in_process",
+      "metered_by": "none"
+    },
+    "credential_broker": {
+      "desc": "원시 자격증명 노출 없이 lease-scoped 자격증명을 중개",
+      "transport": "in_process",
+      "metered_by": "none"
+    },
+    "audit_siem_export": {
+      "desc": "정책 및 실행 감사를 구조화해 SIEM으로 내보냄",
+      "transport": "http",
+      "metered_by": "none"
+    },
+    "trusted_runtime_image": {
+      "desc": "digest, signature, SBOM provenance를 확인한 runtime image",
+      "transport": "in_process",
+      "metered_by": "none"
+    },
     "scoped_connector_proxy": {
       "desc": "작업별 API만 제공하는 호스트 중개 connector bridge",
       "transport": "in_process",

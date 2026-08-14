@@ -148,7 +148,7 @@ intake_question  intake_options  feature_flag  hidden  owner_org_id
 | `version` | ✔ | semver 문자열 |
 | `description` | | 한 줄 설명 |
 | `runtime_boundary.host_services_only` | | 요구 능력 목록(§6). 문자열 단수도 허용 |
-| `runtime_contract` | | model/입력/CCLG/data/MCP/sandbox/상호운용 호스트 계약. [`docs/runtime-services-v1.md`](docs/runtime-services-v1.md) |
+| `runtime_contract` | | model/입력/CCLG/data/MCP/sandbox/governance/상호운용 호스트 계약. [`docs/runtime-services-v1.md`](docs/runtime-services-v1.md) |
 | `runtime_ref` | | 논리 실행기 URI (`apm://runtime/<name>@<semver>`). provider endpoint가 아닌 binding lookup key |
 | `artifacts.package_ref` | | `<slug>@<version>`. **버전 판정의 실체**(§8) |
 | `marketplace.*` | | 발행 선언(§7) |
@@ -183,6 +183,15 @@ host-mediated data/MCP, 격리 sandbox, Agent Plugins/A2A 호환을 같은 방�
 각 선언이 요구하는 capability를 `runtime_boundary.host_services_only`에도 반드시
 명시해야 한다. 상세 shape와 파생 capability는
 [`docs/runtime-services-v1.md`](docs/runtime-services-v1.md)가 정한다.
+
+선택적 `runtime_contract.governance` (`apm.governance.v0.1`)는 enterprise
+Runtime에 sandbox/network deny-by-default, brokered-only credential exposure,
+MCP server/tool allowlist, metadata-only audit/SIEM export, 그리고 digest·signature·SBOM
+기반 trusted runtime image provenance를 선언한다. 이는 **선언 계약**이다. 팩은
+host path·network implementation·credential·trust root를 담지 않으며, 이 블록을
+생략한 기존 팩은 계속 유효하다. 선언이 있으면 Runtime은 governance capability를 모두
+제공하지 못할 때 실행 전에 fail-closed로 거절한다. 상세 shape·금지 값·파생 capability는
+[`docs/runtime-services-v1.md`](docs/runtime-services-v1.md)의 governance profile이 정한다.
 
 특정 실행기를 우선 선택해야 할 때에는 optional `runtime_ref`를 쓴다. 이 값은
 `apm://runtime/human-input-runner@0.1.0`처럼 **논리 이름과 SemVer**만 담는다.
