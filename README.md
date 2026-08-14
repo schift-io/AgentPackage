@@ -5,7 +5,7 @@
 > 내가 만든 에이전트를, 다른 사람이 가진 Runtime에서, 같은 계약으로 실행한다.
 
 APM(Agent Package)은 에이전트를 Git에서 만들고, 검증된 배포 아티팩트로 봉인해
-서로 다른 Runtime에서 실행하기 위한 **source-available 패키지 규약과 정본 키트**다.
+서로 다른 Runtime에서 실행하기 위한 **Apache-2.0 오픈소스 패키지 규약과 정본 키트**다.
 
 APM이 해결하는 문제는 간단하다. 프롬프트와 스킬은 내 컴퓨터에 있는데 모델,
 검색, MCP, 메모리, 이미지 생성, 샌드박스는 다른 사람의 서버에 있을 수 있다.
@@ -77,6 +77,26 @@ Runtime은 `.agent`의 내부 구현을 직접 알지 않고 `.apm`의 선언과
 바꾼다. 새 `.agent`는 원 artifact의 서명이나 신뢰를 물려받지 않으므로 반드시 다시
 `build`하고, 서명을 쓰는 배포 경로에서는 재서명해야 한다.
 
+Schift Registry의 private release는 `apm.release.v1` Ed25519 receipt를 함께 발행한다.
+receipt는 `agent_id@version`, content hash, artifact object key, visibility, 허용 조직,
+소유 조직, 발행자를 한 서명으로 묶는다. 같은 version에서 내용이나 ACL을 바꾸는 일은
+거절되며, fork·수정본은 새 version으로 올려 새 receipt를 받아야 한다. Runtime은 private
+팩을 실행하기 전에 registry authorization과 이 receipt를 모두 검증한다. 로컬 파일에서
+직접 연 artifact에는 registry provenance가 없으므로, 그 신뢰 경계는 로컬 사용자에게만
+있다. wire 형식은 [`docs/release-provenance-v1.md`](docs/release-provenance-v1.md)다.
+
+```bash
+# 수정 가능한 source로 fork한 뒤 정상 조직 API credential로 private release를 발행한다.
+schift pack fork received.apm --output work/received-fork.agent \
+  --agent-id room821-bizplan-private --version 0.3.0
+schift pack build work/received-fork.agent --output dist/room821-bizplan-private-0.3.0.apm
+schift pack push dist/room821-bizplan-private-0.3.0.apm \
+  --private-with org_room821 --private-with org_partner
+```
+
+`schift pack push`는 global admin key를 사용하지 않는다. publisher가 속한 조직의
+`agents:manage` credential로 요청하고, registry가 release receipt를 발행한다.
+
 패키지가 특정 실행기 protocol을 선호하면 `runtime_ref`에
 `apm://runtime/<name>@<semver>`만 기록한다. Cloud Run resource name, Lambda ARN,
 Cloudflare Worker binding, endpoint, token audience, secret은 패키지 밖의 deployment
@@ -140,9 +160,10 @@ $ apm-kit check image-gen.agent --host local-byo
 `.apm`은 content-hash가 곧 주소이고, 호스트 계약·ACL이 **아티팩트 안에** 있다.
 네트워크 밖에서도, 몇 달 뒤 감사할 때도 그대로다.
 
-> **정직한 단서**: hash는 변조를 잡지만 **출처를 증명하지 못한다.** 그건 서명의
-> 몫이고 아직 없다. 자사 배포에서 hash는 주로 위생이며, 제3자 팩을 받기 시작할 때
-> 비로소 방어가 된다(그때는 서명이 함께 필요하다).
+> **정직한 단서**: hash는 변조를 잡지만 **출처를 증명하지 못한다.** private registry
+> release는 `apm.release.v1` receipt로 그 빈칸을 메울 수 있지만, 전역 trust root는
+> 일부러 규약이 정하지 않는다. 제3자 팩은 trusted issuer key와 sandbox를 함께
+> 구성해야 한다.
 
 ### 요약
 
@@ -296,25 +317,13 @@ external search/data, governed MCP, and isolation rules are
 
 ## 규약과 상용 서비스의 경계
 
-이 저장소는 **PolyForm Small Business License 1.0.0**을 사용한다. 소스와 규약은
-읽고 검토할 수 있지만 OSI 의미의 오픈소스는 아니다. 회사의 직전 회계연도 총매출이
-미화 1,000,000달러 미만이고 직원·독립계약자를 합친 인원이 100명 미만인 경우에만
-회사 목적의 무료 사용이 허용된다. 그 기준을 넘는 조직은 별도 상용 라이선스를
-받아야 한다. 자세한 권리·의무는 [`LICENSE`](LICENSE) 원문을 따른다.
+이 저장소의 규약·reference kit은 **Apache License 2.0**으로 공개한다. 누구나
+`.agent`/`.apm` 포맷과 kit을 구현·수정·재배포할 수 있으며, 정확한 조건은
+[`LICENSE`](LICENSE)를 따른다.
 
-이 경계를 둔 이유는 **프로토콜을 공개해 생태계를 만들되, 일정 규모 이상의 조직이
-운영·상업적 가치에 기여하도록 하는 것**이다. 라이선스 기준은 “대기업”처럼
-모호한 표현이 아니라 매출과 인원으로 판정한다.
-
-별도 상용 라이선스의 대상은 다음과 같다.
-
-- managed Runtime 실행, SLA, 지원, 조직·권한·감사, 과금·usage ledger
-- private connector, enterprise identity, 전용 sandbox와 배포 adapter
-- Schift Cloud 또는 고객사 전용 운영 환경
-
-이 라이선스는 법률 자문이 아니며, 공개 전 관할권별 검토가 필요하다. 특히 회사
-규모 판정, 계열사 합산, 재배포, 특허, 상표, APM 규약을 구현한 독립 구현체의 권리는
-상용 계약에서 명확히 정해야 한다.
+Schift Cloud, managed Runtime, SLA, 조직 governance, 과금, private connector는
+이 repository에 포함되지 않는 별도 서비스다. APM을 구현하는 Runtime은 Schift와
+무관하게 동일한 package·capability·release provenance contract를 채택할 수 있다.
 
 ## 호스트 능력 계약
 
@@ -340,7 +349,7 @@ python3 kit/apm_kit.py market                   # marketplace.json 생성
 
 ## 발행은 fail-closed
 
-이 repo는 **source-available 규약·키트 정본**이다. 실제 조직 전용 팩은 별도 private/public
+이 repo는 **오픈소스 규약·키트 정본**이다. 실제 조직 전용 팩은 별도 private/public
 repository에서 관리할 수 있고, `marketplace.json`은 공개 배포할 팩의 source를
 가리키기만 한다. 이 repo에 조직 전용 콘텐츠를 넣지 않는 것이 원칙이다.
 
@@ -355,11 +364,13 @@ marketplace:
 `lint`는 발행 대상에 한해 **테넌트 정체성 스캔**을 돌린다. 특정 org 이름/브랜드가
 하드코딩된 팩은 다른 org가 설치했을 때 그 정체성이 새므로 발행을 막는다.
 
-## 제3자 팩 실행 전 필수 (아직 없음)
+## 제3자 팩 실행 전 남은 필수 게이트
 
 제3자 팩을 안전하게 받으려면 다음이 필요하다:
 
-1. **아티팩트 서명** — 현재는 변조 감지만 하고 발행자 신원 증명이 없다
+1. **registry release receipt** — private/corporate 배포는 `apm.release.v1`과 trusted
+   issuer key 검증을 필수로 둔다. public third-party distribution도 strict Runtime에서는
+   unsigned release를 거절해야 한다.
 2. **프롬프트 인젝션 / 숨은 유니코드 스캔**
 3. **SBOM** (SPDX/CycloneDX)
 

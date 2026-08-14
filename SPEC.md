@@ -3,10 +3,11 @@
 이 문서가 **`.apm` 의 규범적 사양**이다. 여기 적힌 것과 구현이 다르면 **구현이 버그**다.
 README 는 "왜 이 포맷인가"를 논증하고, 이 문서는 "무엇이 참인가"를 정의한다.
 
-- 상태: **v1, source-available 사양**. 서명은 아직 없다(§9).
+- 상태: **v1, Apache-2.0 공개 사양**. private registry release는 선택적
+  `apm.release.v1` provenance profile을 쓸 수 있다(§9).
 - 정본 구현: `kit/apm_codec.py`(컨테이너·해시) · `kit/capabilities.json`(능력 어휘) ·
   `kit/apm_kit.py`(검증·빌드 CLI).
-- 라이선스: PolyForm Small Business License 1.0.0 (`LICENSE`). OSI 오픈소스 라이선스가 아니다.
+- 라이선스: Apache License 2.0 (`LICENSE`).
 
 > ⚠️ **이름 충돌.** 이 `APM` 은 **Agent Package** — 봉인된 단일 아티팩트 포맷이다.
 > [`microsoft/apm`](https://github.com/microsoft/apm)("Agent Package Manager", npm 식
@@ -31,7 +32,7 @@ docs/runtime-services-v1.md, docs/interoperability.md에
 | content-hash 산출식(§4) | 호스트의 실행 모델·스케줄링 |
 | 매니페스트 정본 판정 순서(§5) | 레지스트리 API 표면(호스트 소관) |
 | 호스트 능력 계약과 fail-closed 판정(§6) | 결제·과금 정책 |
-| 발행 게이트(§7) · 버전 판정(§8) | 서명·발행자 신뢰(§9, 미정) |
+| 발행 게이트(§7) · 버전 판정(§8) | Registry release provenance 신뢰 루트(§9) |
 | `.agent` source와 `.apm` artifact의 관계(§2) | 특정 Runtime의 내부 API |
 
 ## 2. 용어
@@ -249,8 +250,8 @@ capability가 공존하며, `http` capability는 host 바깥의 정책·연결 �
 `http` 가 중요한 이유: 어휘가 닫혀 있던 진짜 이유는 "이름이 28개라서"가 아니라 **각
 이름이 우리 인프로세스 구현에 묶여 있어서**다. 능력이 HTTP 계약이면 새 능력을 더하는
 일이 우리 코드 배포가 아니라 **엔드포인트 등록**이 된다. 남의 코드가 우리 프로세스에
-안 들어오므로 **격리가 곧 신뢰 축**이 되고(§9-5 의 서명 대신 샌드박스), 제3의 실행기
-중개(§9-6)도 같은 메커니즘 하나로 풀린다.
+안 들어오므로 **격리가 곧 신뢰 축**이 되고(§10-5 의 release receipt와 sandbox), 제3의 실행기
+중개(§10-6)도 같은 메커니즘 하나로 풀린다.
 
 **⚠️ `http` 능력은 비동기 계약이어야 한다.** 호출은 잡 핸들을 돌려주고 끝나며 완료는
 콜백/폴링으로 받는다. 동기로 붙들면 호스트의 런 슬롯이 남의 계산을 기다리며 놀고,
@@ -301,7 +302,21 @@ capability가 공존하며, `http` capability는 host 바깥의 정책·연결 �
 `pack.json` 전체가 `.apm` 해시에 그대로 들어가므로, 내용이 바뀌었는데 `package_ref` 만
 그대로면 **hash 는 바뀌고 등록 버전은 그대로**라 409 가 난다.
 
-## 9. 알려진 부채 / 미정
+## 9. Registry release provenance profile
+
+`.apm`의 content hash는 변조를 발견하지만, 혼자서는 어떤 registry가 어떤 ACL로
+발행했는지 증명하지 않는다. private distribution을 제공하는 registry는
+[`docs/release-provenance-v1.md`](docs/release-provenance-v1.md)의
+`apm.release.v1` receipt를 발행할 수 있다. 이 profile을 요구하는 Runtime은
+artifact를 실행하기 전에 receipt의 Ed25519 signature, ref 동치성, 그리고 요청 조직의
+ACL을 모두 fail-closed로 검증한다.
+
+이 profile은 `.apm` 바이트 레이아웃이나 hash 식을 바꾸지 않는다. trust root, key
+rotation, artifact storage, approval workflow는 registry가 정하되, receipt가 묶는
+identity/version/hash/ACL은 실행 전에 바뀌면 안 된다. source를 extract 또는 fork한
+경우 원 receipt는 효력이 없고, 새 version의 새 release가 필요하다.
+
+## 10. 알려진 부채 / 미정
 
 > ⚠️ **부채 1과 3의 경중을 헷갈리지 말 것.** 두 빌더가 같은 버전에 서로 다른
 > content-hash 를 내는 **실제 원인은 3(매니페스트 생성 경로가 둘)이지 1(코덱 사본)이
@@ -331,10 +346,10 @@ capability가 공존하며, `http` capability는 host 바깥의 정책·연결 �
    풀린다. 능력 협상(§6)은 OCI 에 없으므로 annotation 이나 별도 레이어로 유지해야 한다.
    즉 "OCI 로 갈아탄다"가 아니라 **봉투만 바꾸고 내용물은 유지**하는 형태다. 결정되면
    해시 접두사 `apm-v1` 을 올려야 하고 **기존 팩 해시가 전부 무효**가 된다.
-5. **서명이 없다.** content-hash 는 **변조를 잡지만 출처를 증명하지 못한다.** 자사
-   배포에서 hash 는 주로 위생이며, 제3자 팩을 받기 시작하는 순간 서명이 함께 필요하다.
-   그 전까지 런타임 설치본 실행(`SCHIFT_PACK_INSTALL`)은 켜지 않는다. 신뢰 축은 서명
-   말고 **실행 샌드박스**로도 세울 수 있다(microVM 급 격리).
+5. **전역 trust root는 없다.** `apm.release.v1`은 registry release의 서명 형식을
+   정의하지만, 어느 issuer key를 신뢰할지·키를 어떻게 회전할지는 Runtime 배포자가
+   결정한다. 제3자 팩은 trusted key와 sandbox를 함께 요구해야 하며, receipt만으로
+   sandbox isolation을 대체하지 않는다.
 6. **실행기 중개(브로커링)는 아직 없다.** 팩은 자기 런타임을 실을 수 없고 무거운 일은 전부
    호스트 능력으로 요청한다(배관은 서버, 판단은 팩). 그래서 새 파이프라인이 필요하면 어휘에
    이름을 추가하고 서비스를 만드는 것이 **호스트 소유자의 작업**이 된다 — 제3자 팩에는 이
