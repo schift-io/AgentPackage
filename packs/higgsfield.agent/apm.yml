@@ -1,6 +1,6 @@
 name: room821-higgsfield-agent
 display_name: "Room821 Higgsfield Directing Agent"
-version: 0.1.4
+version: 0.1.5
 description: >-
   연출 전용 APM. 오픈 연출 버킷(higgsfield-directing)에서 샷 문법·광원·카메라워크·
   무브먼트·앵커 템플릿을 끌어와, txt2img로 스토리보드 grid 초안을 만들고 승인된
@@ -75,6 +75,9 @@ awp_operations:
       transport: streamable_http
       url: https://mcp.higgsfield.ai/mcp
       discover_tools: true
+      tools:
+        - media_import_url
+        - generate_video
       auth:
         type: oauth_bearer
         resource_metadata: https://mcp.higgsfield.ai/.well-known/oauth-protected-resource/mcp

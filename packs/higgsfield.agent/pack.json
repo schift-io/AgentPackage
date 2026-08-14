@@ -100,6 +100,10 @@
           },
           "discover_tools": true,
           "server": "higgsfield",
+          "tools": [
+            "media_import_url",
+            "generate_video"
+          ],
           "transport": "streamable_http",
           "url": "https://mcp.higgsfield.ai/mcp"
         },
@@ -180,7 +184,7 @@
         "name": "generate_image"
       }
     ],
-    "version": "0.1.4",
+    "version": "0.1.5",
     "visibility": "public"
   },
   "markdown_artifact_title": "연출 스토리보드·클립 패킷.md",
@@ -194,7 +198,10 @@
       },
       "discover_tools": true,
       "name": "higgsfield",
-      "tools": [],
+      "tools": [
+        "media_import_url",
+        "generate_video"
+      ],
       "transport": "streamable_http",
       "url": "https://mcp.higgsfield.ai/mcp"
     }
@@ -203,7 +210,7 @@
   "name": "Room821 Higgsfield Directing Agent",
   "non_runnable_agent_ids": [],
   "owner_org_id": "",
-  "package_ref": "room821-higgsfield-agent@0.1.4",
+  "package_ref": "room821-higgsfield-agent@0.1.5",
   "pipeline": "react",
   "primary_skill_id": "room821/skills/higgsfield-director-brief",
   "qc_enabled": false,
