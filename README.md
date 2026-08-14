@@ -44,6 +44,22 @@ contract를 고정하면 재현 가능한 실행을 목표로 한다. 조건이 
 보장하는 것은 같은 **계약·권한·trace·artifact 의미**이며, 결과 텍스트의 동일성은
 보장하지 않는다.
 
+### Governance profile: 선언만으로 보안을 주장하지 않는다
+
+`runtime_contract.governance`의 optional `apm.governance.v0.1` profile은 Docker AI
+Governance류의 실행 경계를 **요구**할 수 있다. microVM isolation, deny-by-default
+network와 mount, brokered-only credential, MCP server/tool allowlist, metadata-only
+audit/SIEM export, digest·signature·SBOM으로 검증한 runtime image를 한 선언으로
+묶는다.
+
+이 profile을 쓴 팩은 Runtime이 `governance_policy_enforcer`, `credential_broker`,
+`audit_siem_export`, `trusted_runtime_image`를 모두 명시적으로 제공할 때만 실행한다.
+하나라도 없으면 실행 전에 fail-closed로 거절된다. 즉 APM 표준이 host에 microVM,
+SIEM, credential broker가 이미 있다고 주장하는 것이 아니며, 현재 이를 구현하지 않은
+local·Edge·host profile은 governance 팩을 정상 팩처럼 실행할 수 없다. 정확한
+필드와 금지 값은 [`docs/runtime-services-v1.md`](docs/runtime-services-v1.md),
+실행 가능한 fixture는 [`examples/governance.agent`](examples/governance.agent)에 있다.
+
 ## 60초 만에 패키지 만들기
 
 ```bash
