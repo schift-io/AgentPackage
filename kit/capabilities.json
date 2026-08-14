@@ -235,7 +235,7 @@
   ],
   "hosts": {
     "agent-hub": {
-      "description": "Schift Cloud 실행 호스트. 검증된 기존 능력만 명시적으로 제공한다. 새 runtime-services 능력은 구현 전에는 주장하지 않는다.",
+      "description": "Schift Cloud 실행 호스트. 검증된 기존 능력과 durable task-turn human input 채널을 명시적으로 제공한다. 새 runtime-services 능력은 구현 전에는 주장하지 않는다.",
       "provides": [
         "auth",
         "brand_bucket_rag",
@@ -264,7 +264,8 @@
         "higgsfield_mcp",
         "block_catalog",
         "awp_provenance_minting",
-        "publish_gate"
+        "publish_gate",
+        "human_input_channel"
       ]
     },
     "local-byo": {
