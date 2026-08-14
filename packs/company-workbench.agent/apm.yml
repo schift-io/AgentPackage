@@ -1,0 +1,72 @@
+name: company-workbench
+display_name: "Company Workbench"
+version: 0.1.0
+description: >-
+  A runtime-neutral business workbench that turns one editable brief into
+  reviewed email, decision deck, proposal, and landing-page draft artifacts.
+package_ref: company-workbench@0.1.0
+visibility: private
+owner_org: org_room821
+pipeline: react
+runtime_boundary:
+  apm_owns:
+    - shared_brief_schema
+    - draft_generation_policy
+    - source_grounding_rules
+    - human_review_gate
+  host_services_only:
+    - text_generation_connector
+    - draft_persistence
+    - publish_gate
+  forbidden_host_policy:
+    - automatic_email_send
+    - automatic_site_publish
+    - direct_network_access
+    - credential_storage
+protocol:
+  version: 0.1.0
+  result: apm.run.result.v1
+runner:
+  selection: capability_match
+  modes: [local, isolated]
+execution:
+  default_mode: local
+permissions:
+  requires:
+    scopes: []
+artifacts:
+  declared:
+    - name: shared-brief
+      path: artifacts/shared-brief.md
+      media_type: text/markdown
+    - name: email-draft
+      path: artifacts/email-draft.md
+      media_type: text/markdown
+    - name: decision-deck-outline
+      path: artifacts/decision-deck-outline.md
+      media_type: text/markdown
+    - name: proposal-structure
+      path: artifacts/proposal-structure.md
+      media_type: text/markdown
+    - name: landing-page-brief
+      path: artifacts/landing-page-brief.md
+      media_type: text/markdown
+    - name: review-checklist
+      path: artifacts/review-checklist.md
+      media_type: text/markdown
+agents:
+  - id: company-workbench/agent.md
+    path: agent.md
+skills:
+  - id: company-workbench/skills/shared-editable-brief
+    path: skills/shared-editable-brief/SKILL.md
+  - id: company-workbench/skills/email-drafts
+    path: skills/email-drafts/SKILL.md
+  - id: company-workbench/skills/decision-deck
+    path: skills/decision-deck/SKILL.md
+  - id: company-workbench/skills/proposal-structure
+    path: skills/proposal-structure/SKILL.md
+  - id: company-workbench/skills/landing-page-brief
+    path: skills/landing-page-brief/SKILL.md
+  - id: company-workbench/skills/human-review-gate
+    path: skills/human-review-gate/SKILL.md
