@@ -1,10 +1,10 @@
 name: company-workbench
 display_name: "Company Workbench"
-version: 0.1.0
+version: 0.1.1
 description: >-
   A runtime-neutral business workbench that turns one editable brief into
   reviewed email, decision deck, proposal, and landing-page draft artifacts.
-package_ref: company-workbench@0.1.0
+package_ref: company-workbench@0.1.1
 visibility: private
 owner_org: org_room821
 pipeline: react
