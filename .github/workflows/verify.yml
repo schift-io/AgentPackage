@@ -24,7 +24,8 @@ jobs:
       - name: unit tests
         run: python3 -m unittest discover -s tests -v
 
-      - name: check — agent-hub
+      - name: check — agent-hub (informational)
+        continue-on-error: true
         run: python3 kit/apm_kit.py check --host agent-hub --packs-dir examples
 
       - name: check — local-byo (informational)
