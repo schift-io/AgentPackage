@@ -226,17 +226,19 @@ README에 있는 건 설명이고, SPEC에 있는 건 계약이다.
 
 ## 라이선스
 
-**Schift Agent Package License v1.0** — [`LICENSE`](LICENSE)
+**Schift License v2.0** — [`LICENSE`](LICENSE)
+
+Apache 2.0 기반 + §5 매출 문턱. LFM Open License 패턴.
 
 | | |
 |---|---|
 | 패키지 만들기, 빌드, 수정, 배포 | **무료** |
-| 내 컴퓨터나 내 서버에서 실행 | **무료** |
+| 상업적 사용 (연매출 $10M 미만) | **무료** |
 | `.apm` 호환 도구 직접 구현 | **무료** (포맷은 오픈 스펙) |
-| APM 실행을 managed service로 제공 | 상업 라이선스 필요 |
+| 상업적 사용 (연매출 $10M 이상) | [상업 라이선스](mailto:licensing@schift.io) |
 
 `.apm` 포맷은 오픈 스펙이다. reader, writer, runner를 허락 없이 만들어도
-된다 — LICENSE §4.
+된다 — LICENSE §6.
 
 ---
 

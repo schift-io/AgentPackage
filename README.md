@@ -250,13 +250,14 @@ A skill is what an agent *reads*. A package is what an agent *runs on*.
 
 ## License
 
-**Schift Agent Package License v1.0** ([`LICENSE`](LICENSE))
+**Schift License v2.0** ([`LICENSE`](LICENSE))
 
 | Use | |
 |---|---|
 | Create, build, share, run packages | **Free** |
 | Build `.apm`-compatible tools | **Free** (open spec) |
-| Offer APM execution as a managed service | [Commercial](mailto:licensing@schift.io) |
+| Commercial use (annual revenue < $10M) | **Free** |
+| Commercial use (annual revenue ≥ $10M) | [Commercial license](mailto:licensing@schift.io) |
 
 ---
 
