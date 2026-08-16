@@ -134,11 +134,25 @@ thing an agent can do isn't crash — it's quietly do the wrong thing.
 
 ```
 .apm
- ├── Local Runner           your model, your files, no cost
- ├── Schift Agent Runtime   memory, search, governance, billing
- │                          → schift.io/agent-runtime
- └── Custom Runner          your infra, your adapter
+ ├── Local                  your model, your files, free
+ ├── Schift Agent Runtime   one command, fully managed
+ └── Self-hosted            your cloud, your rules
 ```
+
+**[Schift Agent Runtime](https://schift.io/agent-runtime/)** — the fastest
+path. `pack push` and it runs. Memory, search, governance, billing included.
+
+**Self-hosted** — run the `.apm` on your own infrastructure.
+
+| Cloud | How |
+|---|---|
+| **AWS / Azure / GCP** | [Contact us](mailto:hello@schift.io) for deployment support |
+| **NCloud / On-premises** | [Contact us](mailto:hello@schift.io) for dedicated instance |
+| **Your own runner** | Implement the [runtime contract](docs/runtime-adapter.md) yourself |
+
+Want to build your own runner? Everything you need is in [`docs/`](docs/) —
+runtime services, capability negotiation, execution modes, artifact results,
+release provenance. The spec is open.
 
 ## CLI
 
