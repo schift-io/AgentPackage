@@ -84,7 +84,7 @@ that must not leak into real config.
 ## Try it
 
 ```bash
-cd core-dependencies/AgentPackage
+cd AgentPackage
 
 # Host that has every declared capability — passes.
 python3 kit/apm_kit.py check higgsfield-demo.agent --host agent-hub --packs-dir examples
