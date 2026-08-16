@@ -3,11 +3,12 @@
 이 문서가 **`.apm` 의 규범적 사양**이다. 여기 적힌 것과 구현이 다르면 **구현이 버그**다.
 README 는 "왜 이 포맷인가"를 논증하고, 이 문서는 "무엇이 참인가"를 정의한다.
 
-- 상태: **v1, Apache-2.0 공개 사양**. private registry release는 선택적
+- 상태: **v1, 공개 사양**. private registry release는 선택적
   `apm.release.v1` provenance profile을 쓸 수 있다(§9).
 - 정본 구현: `kit/apm_codec.py`(컨테이너·해시) · `kit/capabilities.json`(능력 어휘) ·
   `kit/apm_kit.py`(검증·빌드 CLI).
-- 라이선스: Apache License 2.0 (`LICENSE`).
+- 라이선스: Schift Agent Package License v1.0 (`LICENSE`). `.apm` 포맷 사양 자체는
+  오픈 스펙이다(LICENSE §4).
 
 > ⚠️ **이름 충돌.** 이 `APM` 은 **Agent Package** — 봉인된 단일 아티팩트 포맷이다.
 > [`microsoft/apm`](https://github.com/microsoft/apm)("Agent Package Manager", npm 식

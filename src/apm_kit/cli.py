@@ -33,11 +33,18 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from runtime_contract import (
-    declared_host_capabilities,
-    runtime_required_capabilities,
-    validate_runtime_contract,
-)
+try:
+    from apm_kit.runtime_contract import (
+        declared_host_capabilities,
+        runtime_required_capabilities,
+        validate_runtime_contract,
+    )
+except ImportError:
+    from runtime_contract import (
+        declared_host_capabilities,
+        runtime_required_capabilities,
+        validate_runtime_contract,
+    )
 
 KIT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = KIT_DIR.parent
@@ -429,7 +436,10 @@ def cmd_build(args: argparse.Namespace) -> int:
     쓰도록 고치자 일치했다. 팩 36/36 이 `pack.json` 을 갖고 있으므로 실질적으로는
     항상 1번 경로다. `apm.yml` 은 **저작 포맷**이지 정본이 아니다(§5).
     """
-    from apm_codec import build_apm_bundle
+    try:
+        from apm_kit.codec import build_apm_bundle
+    except ImportError:
+        from apm_codec import build_apm_bundle
 
     out_dir = Path(args.out or (REPO_ROOT / "dist"))
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -464,7 +474,10 @@ SEMVER_RE = re.compile(
 
 
 def _read_artifact(path: Path) -> tuple[dict[str, Any], dict[str, bytes], str]:
-    from apm_codec import content_hash, read_apm_bundle
+    try:
+        from apm_kit.codec import content_hash, read_apm_bundle
+    except ImportError:
+        from apm_codec import content_hash, read_apm_bundle
 
     if not path.is_file():
         raise ValueError(f"artifact not found: {path}")
