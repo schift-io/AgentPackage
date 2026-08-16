@@ -150,13 +150,30 @@ Usage billing            ·                   ✓
 
 ### apm-runner (open, free)
 
-The base runner. Executes `.apm` packages with your own model. No Schift
-account needed. Deploy it anywhere — Docker, Cloud Run, Lambda, your laptop.
+The base runner. Executes `.apm` packages with **any model** — Claude,
+GPT, Kimi, Gemini, Ollama, or any OpenAI-compatible endpoint. No Schift
+account needed. No codex dependency. Deploy anywhere.
 
 ```bash
+# Generate deployment files
 npx @schift-io/mcp pack deploy my-agent-0.1.0.apm --target docker
-cd deploy && docker build -t my-agent . && docker run -p 8080:8080 my-agent
+
+# Run with Claude
+cd deploy && docker build -t my-agent .
+docker run -e APM_MODEL_PROVIDER=anthropic -e ANTHROPIC_API_KEY=sk-... \
+  -p 8080:8080 my-agent
+
+# Run with local Ollama
+docker run -e APM_MODEL_PROVIDER=ollama \
+  -e APM_MODEL_BASE_URL=http://host.docker.internal:11434/v1 \
+  -p 8080:8080 my-agent
 ```
+
+Supported providers: `anthropic` · `openai` · `kimi` · `deepseek` ·
+`groq` · `together` · `ollama` · `google`. Any unlisted provider works
+with `APM_MODEL_BASE_URL` + `APM_MODEL_API_KEY`.
+
+Base image: [`ghcr.io/schift-io/apm-runner`](https://github.com/schift-io/schift/pkgs/container/apm-runner)
 
 It runs the agent. That's it. No search, no memory, no governance.
 You bring the model, you get the result.
@@ -171,6 +188,7 @@ npx @schift-io/mcp pack push my-agent-0.1.0.apm
 
 Your agent gets RAG search, persistent memory, team permissions, audit
 trail, model gateway, and usage-based billing. No infrastructure to manage.
+Every model call is recorded in the usage ledger for governance and billing.
 
 ### Self-hosted with full features
 
@@ -193,6 +211,9 @@ Want the full runtime on your own infrastructure?
 | `schift pack build <dir>` | Seal into `.apm` |
 | `schift pack extract <apm>` | Unpack for editing |
 | `schift pack fork <apm> --agent-id <id>` | New identity |
+| `schift pack deploy <apm> --target <t>` | Generate deployment files |
+
+Deploy targets: `docker` · `compose` · `cloud-run` · `lambda`
 
 ## Publish to [Schift Agent Runtime](https://schift.io/agent-runtime/)
 

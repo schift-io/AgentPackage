@@ -125,19 +125,54 @@ $ apm-kit check my-agent.agent --host local-byo
     ▼
 .apm 아티팩트 (결정적 tar.gz, content-addressed)
     │  capability 협상
-    ├── Local Runner      내 모델, 내 파일. 무료, 제한 없음.
-    ├── Schift Runner     관리형 검색, 거버넌스, 모델 게이트웨이, 과금.
+    ├── apm-runner        아무 모델(Claude/GPT/Kimi/Ollama). 무료, 오픈.
+    ├── Agent Runtime     관리형 검색, 거버넌스, 모델 게이트웨이, 과금.
     └── Custom Runner     내 인프라, 내 어댑터, 내 규칙.
 ```
+
+### apm-runner (오픈, 무료)
+
+**아무 모델로 `.apm`을 실행한다.** Schift 계정 불필요. codex 의존 없음.
+
+```bash
+# 배포 파일 생성
+npx @schift-io/mcp pack deploy my-agent-0.1.0.apm --target docker
+
+# Claude로 실행
+cd deploy && docker build -t my-agent .
+docker run -e APM_MODEL_PROVIDER=anthropic -e ANTHROPIC_API_KEY=sk-... \
+  -p 8080:8080 my-agent
+
+# 로컬 Ollama로 실행
+docker run -e APM_MODEL_PROVIDER=ollama \
+  -e APM_MODEL_BASE_URL=http://host.docker.internal:11434/v1 \
+  -p 8080:8080 my-agent
+```
+
+지원 프로바이더: `anthropic` · `openai` · `kimi` · `deepseek` · `groq` ·
+`together` · `ollama` · `google`. 미등록 프로바이더는
+`APM_MODEL_BASE_URL` + `APM_MODEL_API_KEY`로 연결.
+
+베이스 이미지: [`ghcr.io/schift-io/apm-runner`](https://github.com/schift-io/schift/pkgs/container/apm-runner)
+
+### Agent Runtime (관리형, 유료)
+
+```bash
+npx @schift-io/mcp pack push my-agent-0.1.0.apm
+```
+
+검색, 메모리, 거버넌스, 과금 전부 포함. 모든 모델 호출이 원장에 기록된다.
 
 ## CLI
 
 | 명령 | 설명 |
 |---|---|
 | `init <name>` | 새 `.agent` 생성 |
+| `import <path>` | SKILL.md / .claude / .cursorrules 변환 |
 | `lint <pack>` | 구조, 필드, 정체성 패턴 검증 |
 | `check <pack> --host <profile>` | 이 Runner가 이 패키지를 실행할 수 있나? |
 | `build <pack>` | `.apm`으로 봉인 |
+| `deploy <apm> --target <t>` | 배포 파일 생성 (docker/compose/cloud-run/lambda) |
 | `extract <apm> --output <dir>` | 편집 가능한 소스로 추출 |
 | `fork <apm> --output <dir> --agent-id <id>` | 새 identity와 버전으로 추출 |
 
