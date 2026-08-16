@@ -257,7 +257,7 @@ A skill is what an agent *reads*. A package is what an agent *runs on*.
 | Create, build, share, run packages | **Free** |
 | Build `.apm`-compatible tools | **Free** (open spec) |
 | Commercial use (annual revenue < $10M) | **Free** |
-| Commercial use (annual revenue ≥ $10M) | [Commercial license](mailto:licensing@schift.io) |
+| Commercial use (annual revenue ≥ $10M) | [Commercial license](mailto:hello@schift.io) |
 
 ---
 

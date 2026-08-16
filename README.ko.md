@@ -235,7 +235,7 @@ Apache 2.0 기반 + §5 매출 문턱. LFM Open License 패턴.
 | 패키지 만들기, 빌드, 수정, 배포 | **무료** |
 | 상업적 사용 (연매출 $10M 미만) | **무료** |
 | `.apm` 호환 도구 직접 구현 | **무료** (포맷은 오픈 스펙) |
-| 상업적 사용 (연매출 $10M 이상) | [상업 라이선스](mailto:licensing@schift.io) |
+| 상업적 사용 (연매출 $10M 이상) | [상업 라이선스](mailto:hello@schift.io) |
 
 `.apm` 포맷은 오픈 스펙이다. reader, writer, runner를 허락 없이 만들어도
 된다 — LICENSE §6.
