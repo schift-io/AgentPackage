@@ -132,27 +132,55 @@ thing an agent can do isn't crash — it's quietly do the wrong thing.
 
 ## Where it runs
 
+Run your `.apm` anywhere. Pick the level you need.
+
 ```
-.apm
- ├── Local                  your model, your files, free
- ├── Schift Agent Runtime   one command, fully managed
- └── Self-hosted            your cloud, your rules
+                        apm-runner (open)    Schift Agent Runtime
+                        ─────────────────    ────────────────────
+Model calls              ✓                   ✓
+Artifact generation      ✓                   ✓
+Self-hosted (any cloud)  ✓                   ✓
+RAG search               ·                   ✓
+Memory (CCLG)            ·                   ✓
+Team permissions         ·                   ✓
+Governance + audit       ·                   ✓
+Model gateway            ·                   ✓
+Usage billing            ·                   ✓
 ```
 
-**[Schift Agent Runtime](https://schift.io/agent-runtime/)** — the fastest
-path. `pack push` and it runs. Memory, search, governance, billing included.
+### apm-runner (open, free)
 
-**Self-hosted** — run the `.apm` on your own infrastructure.
+The base runner. Executes `.apm` packages with your own model. No Schift
+account needed. Deploy it anywhere — Docker, Cloud Run, Lambda, your laptop.
+
+```bash
+npx @schift-io/mcp pack deploy my-agent-0.1.0.apm --target docker
+cd deploy && docker build -t my-agent . && docker run -p 8080:8080 my-agent
+```
+
+It runs the agent. That's it. No search, no memory, no governance.
+You bring the model, you get the result.
+
+### [Schift Agent Runtime](https://schift.io/agent-runtime/) (managed)
+
+The full runtime. One command, everything included.
+
+```bash
+npx @schift-io/mcp pack push my-agent-0.1.0.apm
+```
+
+Your agent gets RAG search, persistent memory, team permissions, audit
+trail, model gateway, and usage-based billing. No infrastructure to manage.
+
+### Self-hosted with full features
+
+Want the full runtime on your own infrastructure?
 
 | Cloud | How |
 |---|---|
-| **AWS / Azure / GCP** | [Contact us](mailto:hello@schift.io) for deployment support |
-| **NCloud / On-premises** | [Contact us](mailto:hello@schift.io) for dedicated instance |
-| **Your own runner** | Implement the [runtime contract](docs/runtime-adapter.md) yourself |
-
-Want to build your own runner? Everything you need is in [`docs/`](docs/) —
-runtime services, capability negotiation, execution modes, artifact results,
-release provenance. The spec is open.
+| **AWS / Azure / GCP / NCloud** | [Contact us](mailto:hello@schift.io) — dedicated instance |
+| **On-premises** | [Contact us](mailto:hello@schift.io) — Snowflake-style deployment |
+| **Build your own** | Implement the [runtime contract](docs/runtime-adapter.md) |
 
 ## CLI
 
