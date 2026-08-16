@@ -3,3 +3,9 @@ __pycache__/
 .DS_Store
 dist/
 dist/
+
+# Internal packs (not for public distribution)
+/packs/
+/identity-patterns.json
+/mirror/
+/.claude-plugin/
