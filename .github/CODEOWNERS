@@ -1,0 +1,6 @@
+# Default: Schift team reviews all PRs
+* @schift-io/core
+
+# Spec changes require explicit review
+SPEC.md @schift-io/core
+LICENSE @schift-io/core
